@@ -1,5 +1,6 @@
 include MANIFEST.in
 include README.txt
+include ez_setup.py
 include mwlib/__init__.py
 include mwlib/_extversion.py
 include mwlib/ext.py
