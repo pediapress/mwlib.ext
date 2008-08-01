@@ -4,13 +4,6 @@ import os
 
 def main():
     files = [x.strip() for x in os.popen("hg manifest")]
-    files.append("README.html")
-    files.append("docs/commands.html")
-    files.append("docs/configfiles.html")
-    files.append("docs/metabook.html")
-    files.append("docs/writers.html")
-    files.append("docs/zipfile.html")
-    files.append("mwlib/_mwscan.cc")
     
     def remove(n):
         try:
