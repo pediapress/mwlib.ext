@@ -1,14 +1,7 @@
 include MANIFEST.in
-include README.html
 include README.txt
-include docs/commands.html
-include docs/configfiles.html
-include docs/metabook.html
-include docs/writers.html
-include docs/zipfile.html
 include mwlib/__init__.py
 include mwlib/_extversion.py
-include mwlib/_mwscan.cc
 include mwlib/ext.py
 include mwlib/reportlab/MANIFEST.in
 include mwlib/reportlab/README
