@@ -526,8 +526,10 @@ def _isPILImage(im):
     except ImportError:
         return 0
 
-class ImageReader:
+class ImageReader(object):
     "Wraps up either PIL or Java to get data from bitmaps"
+    _cached_readers = {}
+    
     def __init__(self, fileName):
         if isinstance(fileName,ImageReader):
             self.__dict__ = fileName.__dict__   #borgize
@@ -557,9 +559,27 @@ class ImageReader:
                     from javax.imageio import ImageIO
                     self._image = ImageIO.read(self.fp)
                 else:
+                    if self.fileName in self._cached_readers:
+                        self.__dict__ = self._cached_readers[self.fileName].__dict__
+                        self.__class__ = LazyImageReader
+                        return
+                    
+                            
                     import PIL.Image
                     self._image = PIL.Image.open(self.fp)
-                    if self._image=='JPEG': self.jpeg_fh = self._jpeg_fp
+                    self.getSize()
+
+                    use_jpeg_fp = self._image=='JPEG'
+                    del self._image
+                    del self.fp
+                    self.__class__=LazyImageReader
+                    
+                    if use_jpeg_fp:
+                        self.jpeg_fh = self._jpeg_fp
+
+                    self._cached_readers[self.fileName] = self
+                    
+                        
             except:
                 et,ev,tb = sys.exc_info()
                 if hasattr(ev,'args'):
@@ -632,8 +652,6 @@ class ImageReader:
             if self._image.info.has_key("transparency"):
                 transparency = self._image.info["transparency"] * 3
                 palette = self._image.palette
-                if not palette:
-                    return None
                 try:
                     palette = palette.palette
                 except:
@@ -641,6 +659,16 @@ class ImageReader:
                 return map(ord, palette[transparency:transparency+3])
             else:
                 return None
+
+class LazyImageReader(ImageReader):
+    @property
+    def fp(self):
+        return open_for_read(self.fileName, 'b')
+        
+    @property
+    def _image(self):        
+        import PIL.Image
+        return PIL.Image.open(self.fp)
 
 def getImageData(imageFileName):
     "Get width, height and RGB pixels from image file.  Wraps Java/PIL"

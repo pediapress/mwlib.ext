@@ -5,20 +5,14 @@ __version__=''' $Id: setup.py 3008 2007-01-12 11:31:47Z rgbecker $ '''
 
 import os, sys, distutils, glob
 from distutils.core import setup, Extension
-
-# from Zope - App.Common.package_home
-def package_home(globals_dict):
-    __name__=globals_dict['__name__']
-    m=sys.modules[__name__]
-    r=os.path.split(m.__path__[0])[0]
-    return r
+from distutils.sysconfig import get_python_lib
 
 pjoin = os.path.join
 abspath = os.path.abspath
 isfile = os.path.isfile
 isdir = os.path.isfile
 dirname = os.path.dirname
-package_path = pjoin(package_home(distutils.__dict__), 'site-packages', 'reportlab')
+package_path = pjoin(get_python_lib(plat_specific=1), 'reportlab')
 
 def get_version():
     #determine Version
