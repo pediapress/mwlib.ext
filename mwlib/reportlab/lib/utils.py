@@ -652,6 +652,8 @@ class ImageReader(object):
             if self._image.info.has_key("transparency"):
                 transparency = self._image.info["transparency"] * 3
                 palette = self._image.palette
+                if not palette: # fix: some images do not seem to have a palette at all
+                    return None
                 try:
                     palette = palette.palette
                 except:
