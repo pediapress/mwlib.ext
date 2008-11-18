@@ -1681,7 +1681,10 @@ class Destination:
         self.fmt = self.page = None
     def format(self, document):
         f = self.fmt
-        if f is None: raise ValueError, "format not resolved %s" % self.name
+        #if f is None: raise ValueError, "format not resolved %s" % self.name
+        # FIXME: below is a hack to prevent Exceptions when using internal links or booksmarks
+        # which have an invalid target. this happens when testrendering tables in mwlib.rl for example
+        if f is None: return ''
         p = self.page
         if p is None: raise ValueError, "Page reference unbound %s" % self.name
         f.page = p
