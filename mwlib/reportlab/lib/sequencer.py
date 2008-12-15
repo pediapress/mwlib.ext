@@ -1,9 +1,8 @@
 #Copyright ReportLab Europe Ltd. 2000-2004
 #see license.txt for license details
 #history http://www.reportlab.co.uk/cgi-bin/viewcvs.cgi/public/reportlab/trunk/reportlab/lib/sequencer.py
-__version__=''' $Id: sequencer.py 3052 2007-03-07 14:04:49Z rgbecker $ '''
-"""This module defines a single public class, Sequencer, which aids in
-numbering and formatting lists."""
+__version__=''' $Id: sequencer.py 3342 2008-12-12 15:55:34Z andy $ '''
+__doc__="""A Sequencer class counts things. It aids numbering and formatting lists."""
 __all__='''Sequencer getSequencer setSequencer'''.split()
 #
 # roman numbers conversion thanks to
@@ -98,7 +97,8 @@ class Sequencer:
     some counters are reset when their parents.
     It keeps track of a number of
     'counters', which are created on request:
-    Usage:
+    Usage::
+    
         >>> seq = layout.Sequencer()
         >>> seq.next('Bullets')
         1

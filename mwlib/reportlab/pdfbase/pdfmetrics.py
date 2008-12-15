@@ -2,9 +2,8 @@
 #see license.txt for license details
 #history http://www.reportlab.co.uk/cgi-bin/viewcvs.cgi/public/reportlab/trunk/reportlab/pdfbase/pdfmetrics.py
 #$Header $
-__version__=''' $Id: pdfmetrics.py 3242 2008-07-14 08:57:50Z rgbecker $ '''
-__doc__="""
-This provides a database of font metric information and
+__version__=''' $Id: pdfmetrics.py 3345 2008-12-12 17:55:22Z damian $ '''
+__doc__="""This provides a database of font metric information and
 efines Font, Encoding and TypeFace classes aimed at end users.
 
 There are counterparts to some of these in pdfbase/pdfdoc.py, but
@@ -86,7 +85,7 @@ def parseAFMFile(afmFileName):
     topLevel = {}
     glyphLevel = []
 
-    lines = map(string.strip, lines)
+    lines = [l for l in map(string.strip, lines) if not l.lower().startswith('comment')]
     #pass 1 - get the widths
     inMetrics = 0  # os 'TOP', or 'CHARMETRICS'
     for line in lines:
@@ -287,13 +286,17 @@ class Encoding:
             idx = idx + 1
 
     def getDifferences(self, otherEnc):
-        """Return a compact list of the code points differing between two encodings
+        """
+        Return a compact list of the code points differing between two encodings
 
         This is in the Adobe format: list of
            [[b1, name1, name2, name3],
            [b2, name4]]
+           
         where b1...bn is the starting code point, and the glyph names following
-        are assigned consecutive code points."""
+        are assigned consecutive code points.
+        
+        """
 
         ranges = []
         curRange = None

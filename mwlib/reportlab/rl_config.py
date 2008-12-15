@@ -1,7 +1,8 @@
 #Copyright ReportLab Europe Ltd. 2000-2004
 #see license.txt for license details
 #history http://www.reportlab.co.uk/cgi-bin/viewcvs.cgi/public/reportlab/trunk/reportlab/rl_config.py
-__version__=''' $Id: rl_config.py 3238 2008-06-18 13:21:08Z rgbecker $ '''
+__version__=''' $Id: rl_config.py 3345 2008-12-12 17:55:22Z damian $ '''
+__doc__='''Configuration file.  You may edit this if you wish.'''
 
 allowTableBoundsErrors =    1 # set to 0 to die on too large elements in tables in debug (recommend 1 for production use)
 shapeChecking =             1
@@ -17,9 +18,9 @@ showBoundary =              0                       # turns on and off boundary 
 emptyTableAction=           'error'                 # one of 'error', 'indicate', 'ignore'
 invariant=                  0                       #produces repeatable,identical PDFs with same timestamp info (for regression testing)
 eps_preview_transparent=    None                    #set to white etc
-eps_preview=                1                   #set to False to disable
-eps_ttf_embed=              1                   #set to False to disable
-eps_ttf_embed_uid=          0                   #set to 1 to enable
+eps_preview=                1                       #set to False to disable
+eps_ttf_embed=              1                       #set to False to disable
+eps_ttf_embed_uid=          0                       #set to 1 to enable
 overlapAttachedSpace=       1                       #if set non false then adajacent flowable space after
                                                     #and space before are merged (max space is used).
 longTableOptimize =         0                       #default don't use Henning von Bargen's long table optimizations
@@ -32,6 +33,11 @@ platypus_link_underline=    0                       #paragraph links etc underli
 canvas_basefontname=        'Helvetica'             #this is used to initialize the canvas; if you override to make
                                                     #something else you are responsible for ensuring the font is registered etc etc
 allowShortTableRows=1                               #allows some rows in a table to be short
+imageReaderFlags=0                                  #attempt to convert images into internal memory files to reduce
+                                                    #the number of open files (see lib.utils.ImageReader)
+                                                    #if imageReaderFlags&2 then attempt autoclosing of those files
+                                                    #if imageReaderFlags&4 then cache data 
+                                                    #if imageReaderFlags==-1 then use Ralf Schmitt's re-opening approach
 
 # places to look for T1Font information
 T1SearchPath =  (
@@ -156,7 +162,8 @@ fsEncodings
 odbc_driver
 platypus_link_underline
 canvas_basefontname
-allowShortTableRows'''.split()
+allowShortTableRows
+imageReaderFlags'''.split()
     import os, sys
     global sys_version, _unset_
     sys_version = sys.version.split()[0]        #strip off the other garbage

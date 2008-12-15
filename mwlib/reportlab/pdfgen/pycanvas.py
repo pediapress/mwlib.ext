@@ -2,9 +2,9 @@
 # Author : Jerome Alet - <alet@librelogiciel.com>
 # License : ReportLab's license
 #
-# $Id: pycanvas.py 1821 2002-11-06 17:11:31Z rgbecker $
+# $Id: pycanvas.py 3345 2008-12-12 17:55:22Z damian $
 #
-__doc__ = """pycanvas.Canvas : a Canvas class which can also output Python source code.
+__doc__ = """A contributed Canvas class which can also output Python source code to "replay" operations later
 
 pycanvas.Canvas class works exactly like canvas.Canvas, but you can
 call str() on pycanvas.Canvas instances. Doing so will return the
@@ -25,14 +25,14 @@ unset or not used at all (it then defaults to being unset) then None
 is returned and the doIt() function is much much faster, it is also
 much faster than the original non-serialized program.
 
-the reportlab/test/test_pdfgen_pycanvas.py program is the test suite
+the tests/test_pdfgen_pycanvas.py program is the test suite
 for pycanvas, you can do the following to run it :
 
     First set verbose=1 in reportlab/rl_config.py
 
     then from the command interpreter :
 
-    $ cd reportlab/test
+    $ cd tests
     $ python test_pdfgen_pycanvas.py >n1.py
 
     this will produce both n1.py and test_pdfgen_pycanvas.pdf
@@ -306,4 +306,4 @@ class Canvas :
         self._pyfile.write("%s\n" % pycode)
 
 if __name__ == '__main__':
-    print 'For test scripts, look in reportlab/test'
+    print 'For test scripts, look in tests'

@@ -1,7 +1,7 @@
 #Copyright ReportLab Europe Ltd. 2000-2004
 #see license.txt for license details
 #history http://www.reportlab.co.uk/cgi-bin/viewcvs.cgi/public/reportlab/trunk/reportlab/platypus/flowables.py
-__version__=''' $Id: flowables.py 3195 2007-12-06 17:48:09Z rgbecker $ '''
+__version__=''' $Id: flowables.py 3344 2008-12-12 17:01:47Z tim $ '''
 __doc__="""
 A flowable is a "floating element" in a document whose exact position is determined by the
 other elements that precede it, such as a paragraph, a diagram interspersed between paragraphs,
@@ -36,8 +36,9 @@ from reportlab.pdfbase import pdfutils
 from reportlab.rl_config import _FUZZ, overlapAttachedSpace
 __all__=('TraceInfo','Flowable','XBox','Preformatted','Image','Spacer','PageBreak','SlowPageBreak',
         'CondPageBreak','KeepTogether','Macro','CallerMacro','ParagraphAndImage',
-        'FailOnWrap','HRFlowable','PTOContainer','KeepInFrame','UseUpSpace')
-
+        'FailOnWrap','HRFlowable','PTOContainer','KeepInFrame','UseUpSpace',
+        'DocAssign', 'DocExec', 'DocAssert', 'DocPara', 'DocIf', 'DocWhile',
+        )
 class TraceInfo:
     "Holder for info about where an object originated"
     def __init__(self):
@@ -55,9 +56,11 @@ class TraceInfo:
 #############################################################
 class Flowable:
     """Abstract base class for things to be drawn.  Key concepts:
+    
     1. It knows its size
     2. It draws in its own coordinate system (this requires the
-        base API to provide a translate() function.
+       base API to provide a translate() function.
+    
     """
     _fixedWidth = 0         #assume wrap results depend on arguments?
     _fixedHeight = 0
@@ -135,7 +138,10 @@ class Flowable:
     def split(self, availWidth, availheight):
         """This will be called by more sophisticated frames when
         wrap fails. Stupid flowables should return []. Clever flowables
-        should split themselves and return a list of flowables"""
+        should split themselves and return a list of flowables.
+        If they decide that nothing useful can be fitted in the
+        available space (e.g. if you have a table and not enough
+        space for the first row), also return []"""
         return []
 
     def getKeepWithNext(self):
@@ -176,8 +182,12 @@ class Flowable:
             r = r[:maxLen]
         return "<%s at %s%s>%s" % (self.__class__.__name__, hex(id(self)), self._frameName(), r)
 
+    def _doctemplateAttr(self,a):
+        return getattr(getattr(getattr(self,'canv',None),'_doctemplate',None),a,None)
+
     def _frameName(self):
         f = getattr(self,'_frame',None)
+        if not f: f = self._doctemplateAttr('frame')
         if f and f.id: return ' frame=%s' % f.id
         return ''
 
@@ -395,7 +405,11 @@ class Image(Flowable):
             r = "%s filename=%s>" % (r[:-4],self.filename)
         return r
 
-class Spacer(Flowable):
+class NullDraw(Flowable):
+    def draw(self):
+        pass
+
+class Spacer(NullDraw):
     """A spacer just takes up space and doesn't draw anything - it guarantees
        a gap between objects."""
     _fixedWidth = 1
@@ -407,10 +421,7 @@ class Spacer(Flowable):
     def __repr__(self):
         return "%s(%s, %s)" % (self.__class__.__name__,self.width, self.height)
 
-    def draw(self):
-        pass
-
-class UseUpSpace(Flowable):
+class UseUpSpace(NullDraw):
     def __init__(self):
         pass
 
@@ -422,9 +433,6 @@ class UseUpSpace(Flowable):
         self.height = availHeight
         return (availWidth,availHeight-1e-8)  #step back a point
 
-    def draw(self):
-        pass
-
 class PageBreak(UseUpSpace):
     """Move on to the next page in the document.
        This works by consuming all remaining space in the frame!"""
@@ -433,7 +441,7 @@ class SlowPageBreak(PageBreak):
     pass
 
 class CondPageBreak(Spacer):
-    """Throw a page if not enough vertical space"""
+    """use up a frame if not enough vertical space effectively CondFrameBreak"""
     def __init__(self, height):
         self.height = height
 
@@ -442,33 +450,56 @@ class CondPageBreak(Spacer):
 
     def wrap(self, availWidth, availHeight):
         if availHeight<self.height:
-            return (availWidth, availHeight)
-        return (0, 0)
+            f = self._doctemplateAttr('frame')
+            if not f: return availWidth, availHeight
+            from doctemplate import FrameBreak
+            f.add_generated_content(FrameBreak)
+        return 0, 0
+
+    def identity(self,maxLen=None):
+        return repr(self).replace(')',',frame=%s)'%self._frameName())
 
 def _listWrapOn(F,availWidth,canv,mergeSpace=1,obj=None,dims=None):
     '''return max width, required height for a list of flowables F'''
-    W = 0
-    H = 0
-    pS = 0
-    atTop = 1
-    for f in F:
-        if hasattr(f,'frameAction'): continue
-        w,h = f.wrapOn(canv,availWidth,0xfffffff)
-        if dims is not None: dims.append((w,h))
-        if w<=_FUZZ or h<=_FUZZ: continue
-        W = max(W,w)
-        H += h
-        if not atTop:
-            h = f.getSpaceBefore()
-            if mergeSpace: h = max(h-pS,0)
+    doct = getattr(canv,'_doctemplate',None)
+    if doct:
+        from reportlab.platypus.doctemplate import _addGeneratedContent
+        doct_frame = doct.frame
+        cframe = doct.frame = deepcopy(doct_frame)
+        cframe._generated_content = None
+        del cframe._generated_content
+    else:
+        cframe = None
+    try:
+        W = 0
+        H = 0
+        pS = 0
+        atTop = 1
+        F = F[:]
+        while F:
+            f = F.pop(0)
+            if hasattr(f,'frameAction'): continue
+            w,h = f.wrapOn(canv,availWidth,0xfffffff)
+            if dims is not None: dims.append((w,h))
+            if cframe:
+                _addGeneratedContent(F,cframe)
+            if w<=_FUZZ or h<=_FUZZ: continue
+            W = max(W,w)
             H += h
-        else:
-            if obj is not None: obj._spaceBefore = f.getSpaceBefore()
-            atTop = 0
-        pS = f.getSpaceAfter()
-        H += pS
-    if obj is not None: obj._spaceAfter = pS
-    return W, H-pS
+            if not atTop:
+                h = f.getSpaceBefore()
+                if mergeSpace: h = max(h-pS,0)
+                H += h
+            else:
+                if obj is not None: obj._spaceBefore = f.getSpaceBefore()
+                atTop = 0
+            pS = f.getSpaceAfter()
+            H += pS
+        if obj is not None: obj._spaceAfter = pS
+        return W, H-pS
+    finally:
+        if doct:
+            doct.frame = doct_frame
 
 def _flowableSublist(V):
     "if it isn't a list or tuple, wrap it in a list"
@@ -632,16 +663,13 @@ class ParagraphAndImage(Flowable):
             self.I.drawOn(canv,self.width-self.wI-self.xpad,self.height-self.hI)
             self.P.drawOn(canv,0,0)
 
-class FailOnWrap(Flowable):
+class FailOnWrap(NullDraw):
     def wrap(self, availWidth, availHeight):
         raise ValueError("FailOnWrap flowable wrapped and failing as ordered!")
 
-    def draw(self):
-        pass
-
 class FailOnDraw(Flowable):
     def wrap(self, availWidth, availHeight):
-        return (0,0)
+        return 0,0
 
     def draw(self):
         raise ValueError("FailOnDraw flowable drawn, and failing as ordered!")
@@ -1104,3 +1132,178 @@ class AnchorFlowable(Spacer):
 
     def draw(self):
         self.canv.bookmarkHorizontal(self._name,0,0)
+
+class FrameSplitter(NullDraw):
+    '''When encountered this flowable should either switch directly to nextTemplate
+    if remaining space in the current frame is less than gap+required or it should
+    temporarily modify the current template to have the frames from nextTemplate
+    that are listed in nextFrames and switch to the first of those frames. 
+    '''
+    _ZEROSIZE=1
+    def __init__(self,nextTemplate,nextFrames=[],gap=10,required=72):
+        self.nextTemplate=nextTemplate
+        self.nextFrames=nextFrames
+        self.gap=gap
+        self.required=required
+
+    def wrap(self,aW,aH):
+        frame = self._frame
+        from reportlab.platypus.doctemplate import NextPageTemplate,CurrentFrameFlowable,LayoutError
+        G=[NextPageTemplate(self.nextTemplate)]
+        if aH<self.gap+self.required-_FUZZ:
+            #we are going straight to the nextTemplate with no attempt to modify the frames
+            G.append(PageBreak())
+        else:
+            #we are going to modify the incoming templates
+            templates = self._doctemplateAttr('pageTemplates')
+            if templates is None:
+                raise LayoutError('%s called in non-doctemplate environment'%self.identity())
+            T=[t for t in templates if t.id==self.nextTemplate]
+            if not T:
+                raise LayoutError('%s.nextTemplate=%s not found' % (self.identity(),self.nextTemplate))
+            T=T[0]
+            F=[f for f in T.frames if f.id in self.nextFrames]
+            N=[f.id for f in F]
+            N=[f for f in self.nextFrames if f not in N]
+            if N:
+                raise LayoutError('%s frames=%r not found in pageTemplate(%s)\n%r has frames %r' % (self.identity(),N,T.id,T,[f.id for f in T.frames]))
+            T=self._doctemplateAttr('pageTemplate')
+            def unwrap(canv,doc,T=T,onPage=T.onPage,oldFrames=T.frames):
+                T.frames=oldFrames
+                T.onPage=onPage
+                onPage(canv,doc)
+            T.onPage=unwrap
+            h=aH-self.gap
+            for i,f in enumerate(F):
+                f=copy(f)
+                f.height=h
+                f._reset()
+                F[i]=f
+            T.frames=F
+            G.append(CurrentFrameFlowable(F[0].id))
+        frame.add_generated_content(*G)
+        return 0,0
+
+class DocAssign(NullDraw):
+    '''At wrap time this flowable evaluates var=expr in the doctemplate namespace'''
+    _ZEROSIZE=1
+    def __init__(self,var,expr,life='forever'):
+        Flowable.__init__(self)
+        self.args = var,expr,life
+
+    def funcWrap(self,aW,aH):
+        NS=self._doctemplateAttr('_nameSpace')
+        NS.update(dict(availableWidth=aW,availableHeight=aH))
+        try:
+            return self.func()
+        finally:
+            for k in 'availableWidth','availableHeight':
+                try:
+                    del NS[k]
+                except:
+                    pass
+
+    def func(self):
+        return self._doctemplateAttr('d'+self.__class__.__name__[1:])(*self.args)
+
+    def wrap(self,aW,aH):
+        self.funcWrap(aW,aH)
+        return 0,0
+
+class DocExec(DocAssign):
+    '''at wrap time exec stmt in doc._nameSpace'''
+    def __init__(self,stmt,lifetime='forever'):
+        Flowable.__init__(self)
+        self.args=stmt,lifetime
+
+class DocPara(DocAssign):
+    '''at wrap time create a paragraph with the value of expr as text
+    if format is specified it should use %(__expr__)s for string interpolation
+    of the expression expr (if any). It may also use %(name)s interpolations
+    for other variables in the namespace.
+    suitable defaults will be used if style and klass are None
+    '''
+    def __init__(self,expr,format=None,style=None,klass=None,escape=True):
+        Flowable.__init__(self)
+        self.expr=expr
+        self.format=format
+        self.style=style
+        self.klass=klass
+        self.escape=escape
+
+    def func(self):
+        expr = self.expr
+        if expr:
+            if not isinstance(expr,(str,unicode)): expr = str(expr)
+            return self._doctemplateAttr('docEval')(expr)
+
+    def add_content(self,*args):
+        self._doctemplateAttr('frame').add_generated_content(*args)
+
+    def get_value(self,aW,aH):
+        value = self.funcWrap(aW,aH)
+        if self.format:
+            NS=self._doctemplateAttr('_nameSpace').copy()
+            NS.update(dict(availableWidth=aW,availableHeight=aH))
+            NS['__expr__'] = value
+            value = self.format % NS
+        else:
+            value = str(value)
+        return value
+
+    def wrap(self,aW,aH):
+        value = self.get_value(aW,aH)
+        P = self.klass
+        if not P:
+            from reportlab.platypus.paragraph import Paragraph as P
+        style = self.style
+        if not style:
+            from reportlab.lib.styles import getSampleStyleSheet
+            style=getSampleStyleSheet()['Code']
+        if self.escape:
+            from xml.sax.saxutils import escape
+            value=escape(value)
+        self.add_content(P(value,style=style))
+        return 0,0
+
+class DocAssert(DocPara):
+    def __init__(self,cond,format=None):
+        Flowable.__init__(self)
+        self.expr=cond
+        self.format=format
+
+    def funcWrap(self,aW,aH):
+        self._cond = DocPara.funcWrap(self,aW,aH)
+        return self._cond
+
+    def wrap(self,aW,aH):
+        value = self.get_value(aW,aH)
+        if not bool(self._cond):
+            raise AssertionError(value)
+        return 0,0
+
+class DocIf(DocPara):
+    def __init__(self,cond,thenBlock,elseBlock=[]):
+        Flowable.__init__(self)
+        self.expr = cond
+        self.blocks = elseBlock,thenBlock
+
+    def checkBlock(self,block):
+        if not isinstance(block,(list,tuple)):
+            block = (block,)
+        return block
+
+    def wrap(self,aW,aH):
+        self.add_content(*self.checkBlock(self.blocks[int(bool(self.funcWrap(aW,aH)))]))
+        return 0,0
+
+class DocWhile(DocIf):
+    def __init__(self,cond,whileBlock):
+        Flowable.__init__(self)
+        self.expr = cond
+        self.block = self.checkBlock(whileBlock)
+
+    def wrap(self,aW,aH):
+        if bool(self.funcWrap(aW,aH)):
+            self.add_content(*(list(self.block)+[self]))
+        return 0,0

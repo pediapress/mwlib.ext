@@ -1,16 +1,23 @@
-"""Module to analyze Python source code; for syntax coloring tools.
+#Copyright ReportLab Europe Ltd. 2000-2008
+#see license.txt for license details
+__version__=''' $Id: PyFontify.py 3344 2008-12-12 17:01:47Z tim $ '''
+__doc__="""
+Module to analyze Python source code; for syntax coloring tools.
 
-Interface:
+Interface::
+
     tags = fontify(pytext, searchfrom, searchto)
 
-The 'pytext' argument is a string containing Python source code.
-The (optional) arguments 'searchfrom' and 'searchto' may contain a slice in pytext.
-The returned value is a list of tuples, formatted like this:
+ - The 'pytext' argument is a string containing Python source code.
+ - The (optional) arguments 'searchfrom' and 'searchto' may contain a slice in pytext.
+ - The returned value is a list of tuples, formatted like this::
     [('keyword', 0, 6, None), ('keyword', 11, 17, None), ('comment', 23, 53, None), etc. ]
-The tuple contents are always like this:
+
+ - The tuple contents are always like this::
     (tag, startindex, endindex, sublist)
-tag is one of 'keyword', 'string', 'comment' or 'identifier'
-sublist is not used, hence always None.
+
+ - tag is one of 'keyword', 'string', 'comment' or 'identifier'
+ - sublist is not used, hence always None.
 """
 
 # Based on FontText.py by Mitchell S. Chapman,

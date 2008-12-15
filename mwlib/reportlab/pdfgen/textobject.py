@@ -1,14 +1,13 @@
 #Copyright ReportLab Europe Ltd. 2000-2004
 #see license.txt for license details
 #history http://www.reportlab.co.uk/cgi-bin/viewcvs.cgi/public/reportlab/trunk/reportlab/pdfgen/textobject.py
-__version__=''' $Id: textobject.py 3207 2008-02-13 10:58:03Z rgbecker $ '''
+__version__=''' $Id: textobject.py 3343 2008-12-12 16:37:37Z damian $ '''
 __doc__="""
 PDFTextObject is an efficient way to add text to a Canvas. Do not
 instantiate directly, obtain one from the Canvas instead.
 
 Progress Reports:
-8.83, 2000-01-13, gmcm:
-    created from pdfgen.py
+8.83, 2000-01-13, gmcm: created from pdfgen.py
 """
 
 import string
@@ -24,7 +23,7 @@ class _PDFColorSetter:
     asseumes we have a _code object'''
     def setFillColorCMYK(self, c, m, y, k):
          """set the fill color useing negative color values
-            (cyan, magenta, yellow and darkness value).
+         (cyan, magenta, yellow and darkness value).
          Takes 4 arguments between 0.0 and 1.0"""
          self._fillColorCMYK = (c, m, y, k)
          self._code.append('%s k' % fp_str(c, m, y, k))
@@ -326,7 +325,7 @@ class PDFTextObject(_PDFColorSetter):
                     text = text.decode('utf8')
                 except UnicodeDecodeError,e:
                     i,j = e.args[2:4]
-                    raise UnicodeDecodeError(*(e.args[:4]+('%s\n%s-->%s<--%s' % (e.args[4],text[i-10:i],text[i:j],text[j:j+10]),)))
+                    raise UnicodeDecodeError(*(e.args[:4]+('%s\n%s-->%s<--%s' % (e.args[4],text[max(i-10,0):i],text[i:j],text[j:j+10]),)))
 
             for f, t in pdfmetrics.unicode2T1(text,[font]+font.substitutionFonts):
                 if f!=fc:

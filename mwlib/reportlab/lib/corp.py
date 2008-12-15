@@ -1,11 +1,13 @@
 #!/bin/env python
 #Copyright ReportLab Europe Ltd. 2000-2004
 #see license.txt for license details
-#history http://www.reportlab.co.uk/cgi-bin/viewcvs.cgi/public/reportlab/trunk/reportlab/lib/corp.py
-""" This module includes some reusable routines for ReportLab's
+__version__=''' $Id: corp.py 3342 2008-12-12 15:55:34Z andy $ '''
+__doc__="""Generate ReportLab logo in a variety of sizes and formats.
+
+
+This module includes some reusable routines for ReportLab's
  'Corporate Image' - the logo, standard page backdrops and
  so on - you are advised to do the same for your own company!"""
-__version__=''' $Id: corp.py 2484 2004-12-10 07:27:50Z andy $ '''
 
 from reportlab.lib.units import inch,cm
 from reportlab.lib.validators import *

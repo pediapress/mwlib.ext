@@ -1,10 +1,14 @@
 #Copyright ReportLab Europe Ltd. 2000-2004
 #see license.txt for license details
 #history www.reportlab.co.uk/rl-cgi/viewcvs.cgi/rlextra/graphics/Csrc/renderPM/renderP.py
-__version__=''' $Id: renderPM.py 3104 2007-06-08 14:08:37Z rgbecker $ '''
-"""Usage:
+__version__=''' $Id: renderPM.py 3345 2008-12-12 17:55:22Z damian $ '''
+__doc__="""Render drawing objects in common bitmap formats
+
+Usage::
+
     from reportlab.graphics import renderPM
     renderPM.drawToFile(drawing,filename,fmt='GIF',configPIL={....})
+
 Other functions let you create a PM drawing as string or into a PM buffer.
 Execute the script to see some test drawings."""
 
@@ -405,7 +409,7 @@ class PMCanvas:
 
     def bezierArcCCW(self, cx,cy, rx,ry, theta0, theta1):
         """return a set of control points for Bezier approximation to an arc
-        with angle increasing counter clockwise. No requirement on |theta1-theta0| <= 90
+        with angle increasing counter clockwise. No requirement on (theta1-theta0) <= 90
         However, it must be true that theta1-theta0 > 0."""
 
         # I believe this is also clockwise

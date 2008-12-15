@@ -1,9 +1,9 @@
 #Copyright ReportLab Europe Ltd. 2000-2007
 #see license.txt for license details
-__version__=''' $Id: fontfinder.py 3085 2007-05-22 01:42:00Z andy $ '''
+__version__=''' $Id: fontfinder.py 3342 2008-12-12 15:55:34Z andy $ '''
 
 #modification of users/robin/ttflist.py.
-"""This provides some general-purpose tools for finding fonts.
+__doc__="""This provides some general-purpose tools for finding fonts.
 
 The FontFinder object can search for font files.  It aims to build
 a catalogue of fonts which our framework can work with.  It may be useful
@@ -39,8 +39,8 @@ the initial list, use getFamilyNames; these will be in alpha order.
 
 >>> ff.getFamilyNames()
 ['Bitstream Vera Sans', 'Century Schoolbook L', 'Dingbats', 'LettErrorRobot',
-'Luxi Serif', 'MS Gothic', 'MS Mincho', 'Nimbus Mono L', 'Nimbus Roman No9 L',
-'Nimbus Sans L', 'Rina', 'Standard Symbols L',
+'MS Gothic', 'MS Mincho', 'Nimbus Mono L', 'Nimbus Roman No9 L',
+'Nimbus Sans L', 'Vera', 'Standard Symbols L',
 'URW Bookman L', 'URW Chancery L', 'URW Gothic L', 'URW Palladio L']
 
 One can then obtain a specific font as follows

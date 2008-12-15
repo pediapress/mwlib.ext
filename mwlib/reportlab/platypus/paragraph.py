@@ -1,7 +1,8 @@
 #Copyright ReportLab Europe Ltd. 2000-2008
 #see license.txt for license details
 #history http://www.reportlab.co.uk/cgi-bin/viewcvs.cgi/public/reportlab/trunk/reportlab/platypus/paragraph.py
-__version__=''' $Id: paragraph.py 3239 2008-07-01 13:19:19Z rgbecker $ '''
+__version__=''' $Id: paragraph.py 3345 2008-12-12 17:55:22Z damian $ '''
+__doc__='''The standard paragraph implementation'''
 from string import join, whitespace
 from operator import truth
 from types import StringType, ListType
@@ -18,9 +19,46 @@ from reportlab.rl_config import platypus_link_underline
 import re
 
 #on UTF8 branch, split and strip must be unicode-safe!
+#thanks to Dirk Holtwick for helpful discussions/insight
+#on this one
+_wsc_re_split=re.compile('[%s]+'% re.escape(''.join((
+    u'\u0009',  # HORIZONTAL TABULATION
+    u'\u000A',  # LINE FEED
+    u'\u000B',  # VERTICAL TABULATION
+    u'\u000C',  # FORM FEED
+    u'\u000D',  # CARRIAGE RETURN
+    u'\u001C',  # FILE SEPARATOR
+    u'\u001D',  # GROUP SEPARATOR
+    u'\u001E',  # RECORD SEPARATOR
+    u'\u001F',  # UNIT SEPARATOR
+    u'\u0020',  # SPACE
+    u'\u0085',  # NEXT LINE
+    #u'\u00A0', # NO-BREAK SPACE
+    u'\u1680',  # OGHAM SPACE MARK
+    u'\u2000',  # EN QUAD
+    u'\u2001',  # EM QUAD
+    u'\u2002',  # EN SPACE
+    u'\u2003',  # EM SPACE
+    u'\u2004',  # THREE-PER-EM SPACE
+    u'\u2005',  # FOUR-PER-EM SPACE
+    u'\u2006',  # SIX-PER-EM SPACE
+    u'\u2007',  # FIGURE SPACE
+    u'\u2008',  # PUNCTUATION SPACE
+    u'\u2009',  # THIN SPACE
+    u'\u200A',  # HAIR SPACE
+    u'\u200B',  # ZERO WIDTH SPACE
+    u'\u2028',  # LINE SEPARATOR
+    u'\u2029',  # PARAGRAPH SEPARATOR
+    u'\u202F',  # NARROW NO-BREAK SPACE
+    u'\u205F',  # MEDIUM MATHEMATICAL SPACE
+    u'\u3000',  # IDEOGRAPHIC SPACE
+    )))).split
+
 def split(text, delim=None):
     if type(text) is str: text = text.decode('utf8')
     if type(delim) is str: delim = delim.decode('utf8')
+    if delim is None and u'\xa0' in text:
+        return [uword.encode('utf8') for uword in _wsc_re_split(text)]
     return [uword.encode('utf8') for uword in text.split(delim)]
 
 def strip(text):
@@ -39,13 +77,15 @@ class ParaLines(ABag):
     """
 
 class FragLine(ABag):
-    """class FragLine contains a styled line (ie a line with more than one style)
+    """
+    class FragLine contains a styled line (ie a line with more than one style)::
 
-    extraSpace  unused space for justification only
-    wordCount   1+spaces in line for justification purposes
-    words       [ParaFrags] style text lumps to be concatenated together
-    fontSize    maximum fontSize seen on the line; not used at present,
-                but could be used for line spacing.
+        extraSpace  unused space for justification only
+        wordCount   1+spaces in line for justification purposes
+        words       [ParaFrags] style text lumps to be concatenated together
+        fontSize    maximum fontSize seen on the line; not used at present,
+                    but could be used for line spacing.
+                
     """
 
 #our one and only parser
@@ -297,7 +337,7 @@ except ImportError:
             if (hasattr(f,'cbDefn') or hasattr(g,'cbDefn')
                     or hasattr(f,'lineBreak') or hasattr(g,'lineBreak')): return 0
             for a in ('fontName', 'fontSize', 'textColor', 'rise', 'underline', 'strike', 'link'):
-                if getattr(f,a)!=getattr(g,a): return 0
+                if getattr(f,a,None)!=getattr(g,a,None): return 0
             return 1
 
 def _getFragWords(frags):
@@ -440,7 +480,7 @@ def splitLines0(frags,widths):
     1)  ExtraSpace
     2)  blankCount
     3)  [textDefns....]
-        each text definition is a (ParaFrag, start, limit) triplet
+    each text definition is a (ParaFrag, start, limit) triplet
     '''
     #initialise the algorithm
     lines   = []
@@ -714,19 +754,19 @@ class Paragraph(Flowable):
         <font name=fontfamily/fontname color=colorname size=float>
         <onDraw name=callable label="a label">
         <link>link text</link>
-            attributes of links
-                size/fontSize=num
-                name/face/fontName=name
-                fg/textColor/color=color
-                backcolor/backColor/bgcolor=color
-                dest/destination/target/href/link=target
+        attributes of links
+        size/fontSize=num
+        name/face/fontName=name
+        fg/textColor/color=color
+        backcolor/backColor/bgcolor=color
+        dest/destination/target/href/link=target
         <a>anchor text</a>
-            attributes of anchors
-                fontSize=num
-                fontName=name
-                fg/textColor/color=color
-                backcolor/backColor/bgcolor=color
-                href=href
+        attributes of anchors
+        fontSize=num
+        fontName=name
+        fg/textColor/color=color
+        backcolor/backColor/bgcolor=color
+        href=href
         <a name="anchorpoint"/>
         <unichar name="unicode character name"/>
         <unichar value="unicode code point"/>
@@ -739,11 +779,11 @@ class Paragraph(Flowable):
         of 4 fonts using reportlab.pdfbase.pdfmetrics.registerFont; then
         use the addMapping function to tell the library that these 4 fonts
         form a family e.g.
-            from reportlab.lib.fonts import addMapping
-            addMapping('Vera', 0, 0, 'Vera')    #normal
-            addMapping('Vera', 0, 1, 'Vera-Italic')    #italic
-            addMapping('Vera', 1, 0, 'Vera-Bold')    #bold
-            addMapping('Vera', 1, 1, 'Vera-BoldItalic')    #italic and bold
+        from reportlab.lib.fonts import addMapping
+        addMapping('Vera', 0, 0, 'Vera')    #normal
+        addMapping('Vera', 0, 1, 'Vera-Italic')    #italic
+        addMapping('Vera', 1, 0, 'Vera-Bold')    #bold
+        addMapping('Vera', 1, 1, 'Vera-BoldItalic')    #italic and bold
 
         It will also be able to handle any MathML specified Greek characters.
     """
@@ -906,6 +946,12 @@ class Paragraph(Flowable):
             style = deepcopy(style)
             style.firstLineIndent = 0
         P2=self.__class__(None,style,bulletText=None,frags=func(blPara,s,n))
+        #propagate attributes that might be on self; suggestion from Dirk Holtwick
+        for a in ('autoLeading',    #possible attributes that might be directly on self.
+                ):
+            if hasattr(self,a):
+                setattr(P1,a,getattr(self,a))
+                setattr(P2,a,getattr(self,a))
         return [P1,P2]
 
     def draw(self):
@@ -920,20 +966,22 @@ class Paragraph(Flowable):
 
         A) For the simple case of a single formatting input fragment the output is
             A fragment specifier with
-                kind = 0
-                fontName, fontSize, leading, textColor
-                lines=  A list of lines
+                - kind = 0
+                - fontName, fontSize, leading, textColor
+                - lines=  A list of lines
+                        
                         Each line has two items.
-                        1) unused width in points
-                        2) word list
+                        
+                        1. unused width in points
+                        2. word list
 
         B) When there is more than one input formatting fragment the output is
             A fragment specifier with
-                kind = 1
-                lines=  A list of fragments each having fields
-                            extraspace (needed for justified)
-                            fontSize
-                            words=word list
+               - kind = 1
+               - lines=  A list of fragments each having fields
+                            - extraspace (needed for justified)
+                            - fontSize
+                            - words=word list
                                 each word is itself a fragment with
                                 various settings
 
@@ -1565,6 +1613,13 @@ categorial delimits a general
 convention regarding the forms of the<br/>
 grammar. I suggested that these results
 would follow from the assumption that"""
+        P=Paragraph(text,ParagraphStyle('aaa',parent=styleSheet['Normal'],align=TA_JUSTIFY))
+        dumpParagraphFrags(P)
+        w,h = P.wrap(6*cm-12, 9.7*72)
+        dumpParagraphLines(P)
+
+    if flagged(10):
+        text="""a b c\xc2\xa0d e f"""
         P=Paragraph(text,ParagraphStyle('aaa',parent=styleSheet['Normal'],align=TA_JUSTIFY))
         dumpParagraphFrags(P)
         w,h = P.wrap(6*cm-12, 9.7*72)

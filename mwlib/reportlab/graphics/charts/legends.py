@@ -1,9 +1,9 @@
 #Copyright ReportLab Europe Ltd. 2000-2004
 #see license.txt for license details
 #history http://www.reportlab.co.uk/cgi-bin/viewcvs.cgi/public/reportlab/trunk/reportlab/graphics/charts/legends.py
-"""This will be a collection of legends to be used with charts.
-"""
-__version__=''' $Id: legends.py 3147 2007-09-28 12:52:01Z rgbecker $ '''
+
+__version__=''' $Id: legends.py 3345 2008-12-12 17:55:22Z damian $ '''
+__doc__="""This will be a collection of legends to be used with charts."""
 
 import copy, operator
 
@@ -74,7 +74,7 @@ def _getWidths(i,s, fontName, fontSize, subCols):
         fN = getattr(sc,'fontName',fontName)
         fS = getattr(sc,'fontSize',fontSize)
         m = [stringWidth(x, fN, fS) for x in s.split('\n')]
-        aS(max(subCols[0,i],m and max(m) or 0))
+        aS(max(sc.minWidth,m and max(m) or 0))
     return S
 
 class SubColProperty(PropHolder):

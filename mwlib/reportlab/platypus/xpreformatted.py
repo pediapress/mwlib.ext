@@ -1,7 +1,8 @@
 #Copyright ReportLab Europe Ltd. 2000-2004
 #see license.txt for license details
 #history http://www.reportlab.co.uk/cgi-bin/viewcvs.cgi/public/reportlab/trunk/reportlab/platypus/xpreformatted.py
-__version__=''' $Id: xpreformatted.py 3201 2007-12-20 10:49:28Z rgbecker $ '''
+__version__=''' $Id: xpreformatted.py 3345 2008-12-12 17:55:22Z damian $ '''
+__doc__='''A 'rich preformatted text' widget allowing internal markup'''
 import string
 from types import StringType, ListType
 from reportlab.lib import PyFontify
@@ -81,22 +82,25 @@ class XPreformatted(Paragraph):
 
         A) For the simple case of a single formatting input fragment the output is
             A fragment specifier with
-                kind = 0
-                fontName, fontSize, leading, textColor
-                lines=  A list of lines
-                        Each line has two items.
-                        1) unused width in points
-                        2) a list of words
+                - kind = 0
+                - fontName, fontSize, leading, textColor
+                - lines=  A list of lines
+                
+                    Each line has two items:
+                    
+                    1. unused width in points
+                    2. a list of words
 
         B) When there is more than one input formatting fragment the out put is
             A fragment specifier with
-                kind = 1
-                lines=  A list of fragments each having fields
-                            extraspace (needed for justified)
-                            fontSize
-                            words=word list
-                                each word is itself a fragment with
-                                various settings
+                - kind = 1
+                - lines =  A list of fragments each having fields:
+                
+                    - extraspace (needed for justified)
+                    - fontSize
+                    - words=word list
+                    - each word is itself a fragment with
+                    - various settings
 
         This structure can be used to easily draw paragraphs with the various alignments.
         You can supply either a single width or a list of widths; the latter will have its

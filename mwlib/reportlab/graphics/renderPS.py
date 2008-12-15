@@ -1,7 +1,9 @@
 #Copyright ReportLab Europe Ltd. 2000-2004
 #see license.txt for license details
 #history http://www.reportlab.co.uk/cgi-bin/viewcvs.cgi/public/reportlab/trunk/reportlab/graphics/renderPS.py
-__version__=''' $Id: renderPS.py 3082 2007-05-11 15:38:07Z rgbecker $ '''
+__version__=''' $Id: renderPS.py 3345 2008-12-12 17:55:22Z damian $ '''
+__doc__="""Render drawing objects in Postscript"""
+
 import string, types
 from reportlab.pdfbase.pdfmetrics import getFont, stringWidth, unicode2T1 # for font info
 from reportlab.lib.utils import fp_str, getStringIO
@@ -581,10 +583,7 @@ class PSCanvas:
         # data source output--now we just need to deliver a hex encode
         # series of lines of the right overall size can follow
         # piddlePDF again
-
         rawimage = myimage.tostring()
-        assert(len(rawimage) == imgwidth*imgheight, 'Wrong amount of data for image')
-        #compressed = zlib.compress(rawimage) # no zlib at moment
         hex_encoded = self._AsciiHexEncode(rawimage)
 
         # write in blocks of 78 chars per line
@@ -655,8 +654,6 @@ class PSCanvas:
                             'image'])
         # after image operator just need to dump image dat to file as hexstring
         rawimage = myimage.tostring()
-        assert(len(rawimage) == imwidth*imheight, 'Wrong amount of data for image')
-        #compressed = zlib.compress(rawimage) # no zlib at moment
         hex_encoded = self._AsciiHexEncode(rawimage)
 
         # write in blocks of 78 chars per line

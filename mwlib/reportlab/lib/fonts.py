@@ -2,7 +2,17 @@
 #Copyright ReportLab Europe Ltd. 2000-2004
 #see license.txt for license details
 #history http://www.reportlab.co.uk/cgi-bin/viewcvs.cgi/public/reportlab/trunk/reportlab/lib/fonts.py
-__version__=''' $Id: fonts.py 3101 2007-06-04 14:05:14Z rgbecker $ '''
+__version__=''' $Id: fonts.py 3342 2008-12-12 15:55:34Z andy $ '''
+__doc__='''Utilities to associate bold and italic versions of fonts into families
+
+Bold, italic and plain fonts are usually implemented in separate disk files;
+but non-trivial apps want <b>this</b> to do the right thing.   We therefore
+need to keep 'mappings' between the font family name and the right group
+of up to 4 implementation fonts to use.
+
+Most font-handling code lives in pdfbase, and this probably should too.
+
+'''
 import sys, os
 ###############################################################################
 #   A place to put useful font stuff

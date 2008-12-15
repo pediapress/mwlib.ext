@@ -1,9 +1,9 @@
 #Copyright ReportLab Europe Ltd. 2000-2004
 #see license.txt for license details
 #history http://www.reportlab.co.uk/cgi-bin/viewcvs.cgi/public/reportlab/trunk/reportlab/__init__.py
-__version__=''' $Id: __init__.py 3093 2007-05-24 10:08:18Z rgbecker $ '''
+__version__=''' $Id: __init__.py 3285 2008-09-11 13:01:16Z rgbecker $ '''
 __doc__="""The Reportlab PDF generation library."""
-Version = "2.1"
+Version = "2.2"
 
 import sys
 

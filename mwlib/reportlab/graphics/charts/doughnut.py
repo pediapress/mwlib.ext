@@ -3,13 +3,13 @@
 #history http://www.reportlab.co.uk/cgi-bin/viewcvs.cgi/public/reportlab/trunk/reportlab/graphics/charts/doughnut.py
 # doughnut chart
 
-"""Doughnut chart
+__version__=''' $Id: doughnut.py 3345 2008-12-12 17:55:22Z damian $ '''
+__doc__="""Doughnut chart
 
 Produces a circular chart like the doughnut charts produced by Excel.
 Can handle multiple series (which produce concentric 'rings' in the chart).
 
 """
-__version__=''' $Id: doughnut.py 2499 2004-12-29 17:12:34Z rgbecker $ '''
 
 import copy
 from math import sin, cos, pi
@@ -141,7 +141,7 @@ class Doughnut(AbstractPieChart):
             else:
                 tlab = 0
                 for m in n:
-                    tlab = tlab+m
+                    tlab += m
                 i = tlab-len(labels)
                 if i>0:
                     labels = list(labels) + [''] * i
@@ -210,9 +210,9 @@ class Doughnut(AbstractPieChart):
                         labelRadius = sectorStyle.labelRadius
                         labelX = centerx + (0.5 * self.width * cos(aveAngleRadians) * labelRadius)
                         labelY = centery + (0.5 * self.height * sin(aveAngleRadians) * labelRadius)
-                        _addWedgeLabel(self,text,g.add,averageAngle,labelX,labelY,sectorStyle)
-                    i = i + 1
-                sn = sn + 1
+                        g.add(_addWedgeLabel(self,text,averageAngle,labelX,labelY,sectorStyle))
+                    i += 1
+                sn += 1
 
         else:
             i = 0
@@ -271,7 +271,7 @@ class Doughnut(AbstractPieChart):
                     g.add(theLabel)
 
                 startAngle = endAngle
-                i = i + 1
+                i += 1
 
         return g
 

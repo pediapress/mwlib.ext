@@ -1,10 +1,12 @@
-#Copyright ReportLab Europe Ltd. 2000-2006
+#Copyright ReportLab Europe Ltd. 2000-2008
 #see license.txt for license details
-__version__=''' $Id: canvas.py 3207 2008-02-13 10:58:03Z rgbecker $ '''
+__version__=''' $Id: canvas.py 3343 2008-12-12 16:37:37Z damian $ '''
 __doc__="""
 The Canvas object is the primary interface for creating PDF files. See
 doc/userguide.pdf for copious examples.
 """
+
+__all__ = ['Canvas']
 ENABLE_TRACKING = 1 # turn this off to do profile testing w/o tracking
 
 import os
@@ -14,7 +16,10 @@ from string import join, split, strip, atoi, replace, upper, digits
 import tempfile
 from types import *
 from math import sin, cos, tan, pi, ceil
-import md5
+try:
+    from hashlib import md5
+except ImportError:
+    from md5 import md5
 
 from reportlab import rl_config
 from reportlab.pdfbase import pdfutils
@@ -267,7 +272,8 @@ class Canvas(textobject._PDFColorSetter):
         If closed is set then the entry should show no subsections by default
         when displayed.
 
-        Example
+        Example::
+        
            c.addOutlineEntry("first section", "section1")
            c.addOutlineEntry("introduction", "s1s1", 1, closed=1)
            c.addOutlineEntry("body", "s1s2", 1)
@@ -283,7 +289,8 @@ class Canvas(textobject._PDFColorSetter):
            c.addOutlineEntry("conclusion", "s2s3", 1)
            c.addOutlineEntry("further reading", "s2s3s1", 2)
 
-        generated outline looks like
+        generated outline looks like::
+        
             - first section
             |- introduction
             |- body
@@ -309,17 +316,19 @@ class Canvas(textobject._PDFColorSetter):
         self._doc.outline.addOutlineEntry(key, level, title, closed=closed)
 
     def setOutlineNames0(self, *nametree):   # keep this for now (?)
-        """nametree should can be a recursive tree like so
-           c.setOutlineNames(
-             "chapter1dest",
-             ("chapter2dest",
-              ["chapter2section1dest",
-               "chapter2section2dest",
-               "chapter2conclusiondest"]
-             ), # end of chapter2 description
-             "chapter3dest",
-             ("chapter4dest", ["c4s1", "c4s2"])
-             )
+        """nametree should can be a recursive tree like so::
+            
+               c.setOutlineNames(
+                 "chapter1dest",
+                 ("chapter2dest",
+                  ["chapter2section1dest",
+                   "chapter2section2dest",
+                   "chapter2conclusiondest"]
+                 ), # end of chapter2 description
+                 "chapter3dest",
+                 ("chapter4dest", ["c4s1", "c4s2"])
+                 )
+          
           each of the string names inside must be bound to a bookmark
           before the document is generated.
         """
@@ -438,21 +447,22 @@ class Canvas(textobject._PDFColorSetter):
         choice of 'fitType'.
 
         Fit types and the other arguments they use are:
-        /XYZ left top zoom - fine grained control.  null
+        
+        - XYZ left top zoom - fine grained control.  null
           or zero for any of the parameters means 'leave
           as is', so "0,0,0" will keep the reader's settings.
           NB. Adobe Reader appears to prefer "null" to 0's.
 
-        /Fit - entire page fits in window
+        - Fit - entire page fits in window
 
-        /FitH top - top coord at top of window, width scaled
-                    to fit.
+        - FitH top - top coord at top of window, width scaled
+          to fit.
 
-        /FitV left - left coord at left of window, height
-                     scaled to fit
+        - FitV left - left coord at left of window, height
+          scaled to fit
 
-        /FitR left bottom right top - scale window to fit
-                                  the specified rectangle
+        - FitR left bottom right top - scale window to fit
+          the specified rectangle
 
         (question: do we support /FitB, FitBH and /FitBV
         which are hangovers from version 1.1 / Acrobat 3.0?)"""
@@ -734,7 +744,7 @@ class Canvas(textobject._PDFColorSetter):
         will error in Distiller but work on printers supporting it.
         """
         #check if we've done this one already...
-        rawName = 'PS' + md5.md5(command).hexdigest()
+        rawName = 'PS' + md5(command).hexdigest()
         regName = self._doc.getXObjectName(rawName)
         psObj = self._doc.idToObject.get(regName, None)
         if not psObj:
@@ -913,10 +923,11 @@ class Canvas(textobject._PDFColorSetter):
         ######################################################################
     def resetTransforms(self):
         """I want to draw something (eg, string underlines) w.r.t. the default user space.
-           Reset the matrix! This should be used usually as follows:
+           Reset the matrix! This should be used usually as follows::
+           
               canv.saveState()
               canv.resetTransforms()
-              ...draw some stuff in default space coords...
+              #...draw some stuff in default space coords...
               canv.restoreState() # go back!
         """
         # we have to adjoin the inverse, since reset is not a basic operation (without save/restore)
@@ -1041,7 +1052,8 @@ class Canvas(textobject._PDFColorSetter):
 
     def lines(self, linelist):
         """Like line(), permits many lines to be drawn in one call.
-           for example for the figure
+           for example for the figure::
+           
                |
              -- --
                |
@@ -1229,7 +1241,8 @@ class Canvas(textobject._PDFColorSetter):
 
         There is one special rule to help with accounting formatting.  Here's
         how normal numbers should be aligned on the 'dot'. Look at the
-        LAST two:
+        LAST two::
+        
            12,345,67
               987.15
                42
@@ -1238,6 +1251,7 @@ class Canvas(textobject._PDFColorSetter):
              (456)
                27 inches
                13cm
+        
         Since the last three do not contain a dot, a crude dot-finding
         rule would place them wrong. So we test for the special case
         where no pivot is found, digits are present, but the last character
@@ -1416,21 +1430,23 @@ class Canvas(textobject._PDFColorSetter):
         presentations.  There are six possible effects.  You can
         just guive the effect name, or supply more advanced options
         to refine the way it works.  There are three types of extra
-        argument permitted, and here are the allowed values:
+        argument permitted, and here are the allowed values::
+        
             direction_arg = [0,90,180,270]
             dimension_arg = ['H', 'V']
             motion_arg = ['I','O'] (start at inside or outside)
+        
+        This table says which ones take which arguments::
 
-        This table says which ones take which arguments:
-
-        PageTransitionEffects = {
-            'Split': [direction_arg, motion_arg],
-            'Blinds': [dimension_arg],
-            'Box': [motion_arg],
-            'Wipe' : [direction_arg],
-            'Dissolve' : [],
-            'Glitter':[direction_arg]
-            }
+            PageTransitionEffects = {
+                'Split': [direction_arg, motion_arg],
+                'Blinds': [dimension_arg],
+                'Box': [motion_arg],
+                'Wipe' : [direction_arg],
+                'Dissolve' : [],
+                'Glitter':[direction_arg]
+                }
+        
         Have fun!
         """
         # This builds a Python dictionary with the right arguments
@@ -1446,17 +1462,17 @@ class Canvas(textobject._PDFColorSetter):
         if direction in [0,90,180,270]:
             direction_arg = ('Di', '/%d' % direction)
         else:
-            raise PDFError(' directions allowed are 0,90,180,270')
+            raise pdfdoc.PDFError(' directions allowed are 0,90,180,270')
 
         if dimension in ['H', 'V']:
             dimension_arg = ('Dm', '/' + dimension)
         else:
-            raisePDFError('dimension values allowed are H and V')
+            raise pdfdoc.PDFError('dimension values allowed are H and V')
 
         if motion in ['I','O']:
             motion_arg = ('M', '/' + motion)
         else:
-            raisePDFError('motion values allowed are I and O')
+            raise pdfdoc.PDFError('motion values allowed are I and O')
 
         # this says which effects require which argument types from above
         PageTransitionEffects = {
@@ -1471,7 +1487,7 @@ class Canvas(textobject._PDFColorSetter):
         try:
             args = PageTransitionEffects[effectname]
         except KeyError:
-            raise PDFError('Unknown Effect Name "%s"' % effectname)
+            raise pdfdoc.PDFError('Unknown Effect Name "%s"' % effectname)
 
         # now build the dictionary
         transDict = {}
@@ -1522,4 +1538,4 @@ if _instanceEscapePDF:
     Canvas._escape = new.instancemethod(_instanceEscapePDF,None,Canvas)
 
 if __name__ == '__main__':
-    print 'For test scripts, look in reportlab/test'
+    print 'For test scripts, look in tests'

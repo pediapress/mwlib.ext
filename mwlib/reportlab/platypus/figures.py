@@ -2,7 +2,7 @@
 #see license.txt for license details
 #history http://www.reportlab.co.uk/cgi-bin/viewcvs.cgi/public/reportlab/trunk/reportlab/platypus/figures.py
 """This includes some demos of platypus for use in the API proposal"""
-__version__=''' $Id: figures.py 3230 2008-05-23 10:06:23Z rgbecker $ '''
+__version__=''' $Id: figures.py 3295 2008-09-15 22:55:32Z andy $ '''
 
 import os
 
@@ -46,6 +46,8 @@ class Figure(Flowable):
         self.border = border
         self.spaceBefore = spaceBefore
         self.spaceAfter = spaceAfter
+
+        self._getCaptionPara()  #Larry Meyn's fix - otherwise they all get the number of the last chapter.
 
     def _getCaptionPara(self):
         caption = self.caption

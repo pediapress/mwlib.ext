@@ -1,11 +1,8 @@
 #Copyright ReportLab Europe Ltd. 2000-2004
 #see license.txt for license details
 #history http://www.reportlab.co.uk/cgi-bin/viewcvs.cgi/public/reportlab/trunk/reportlab/lib/validators.py
-__version__=''' $Id: validators.py 3060 2007-04-12 11:29:55Z rgbecker $ '''
-"""
-This module contains some standard verifying functions which can be
-used in an attribute map.
-"""
+__version__=''' $Id: validators.py 3342 2008-12-12 15:55:34Z andy $ '''
+__doc__="""Standard verifying functions used by attrmap."""
 
 import string, sys, codecs
 from types import *

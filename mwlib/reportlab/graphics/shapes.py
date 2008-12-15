@@ -1,10 +1,9 @@
 #Copyright ReportLab Europe Ltd. 2000-2004
 #see license.txt for license details
 #history http://www.reportlab.co.uk/cgi-bin/viewcvs.cgi/public/reportlab/trunk/reportlab/graphics/shapes.py
-"""
-core of the graphics library - defines Drawing and Shapes
-"""
-__version__=''' $Id: shapes.py 3097 2007-05-24 16:49:19Z rgbecker $ '''
+
+__version__=''' $Id: shapes.py 3345 2008-12-12 17:55:22Z damian $ '''
+__doc__='''Core of the graphics library - defines Drawing and Shapes'''
 
 import string, os, sys
 from math import pi, cos, sin, tan

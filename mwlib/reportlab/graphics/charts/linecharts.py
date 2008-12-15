@@ -1,10 +1,10 @@
 #Copyright ReportLab Europe Ltd. 2000-2004
 #see license.txt for license details
 #history http://www.reportlab.co.uk/cgi-bin/viewcvs.cgi/public/reportlab/trunk/reportlab/graphics/charts/linecharts.py
-"""
-This modules defines a very preliminary Line Chart example.
-"""
-__version__=''' $Id: linecharts.py 3147 2007-09-28 12:52:01Z rgbecker $ '''
+
+__version__=''' $Id: linecharts.py 3345 2008-12-12 17:55:22Z damian $ '''
+__doc__="""This modules defines a very preliminary Line Chart example."""
+
 from reportlab.lib import colors
 from reportlab.lib.validators import isNumber, isColor, isColorOrNone, isListOfStrings, \
                                     isListOfStringsOrNone, SequenceOf, isBoolean, NoneOr, \

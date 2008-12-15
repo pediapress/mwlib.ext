@@ -1,7 +1,7 @@
 #Copyright ReportLab Europe Ltd. 2000-2004
 #see license.txt for license details
 #history http://www.reportlab.co.uk/cgi-bin/viewcvs.cgi/public/reportlab/trunk/reportlab/pdfgen/pdfimages.py
-__version__=''' $Id: pdfimages.py 3145 2007-09-21 13:22:28Z rgbecker $ '''
+__version__=''' $Id: pdfimages.py 3297 2008-09-17 14:43:19Z rgbecker $ '''
 __doc__="""
 Image functionality sliced out of canvas.py for generalization
 """
@@ -105,7 +105,7 @@ class PDFImage:
 
         #use a flate filter and Ascii Base 85 to compress
         raw = myimage.tostring()
-        assert(len(raw) == imgwidth * imgheight, "Wrong amount of data for image")
+        assert len(raw) == imgwidth*imgheight*3, "Wrong amount of data for image"
         compressed = zlib.compress(raw)   #this bit is very fast...
         encoded = pdfutils._AsciiBase85Encode(compressed) #...sadly this may not be
         #append in blocks of 60 characters

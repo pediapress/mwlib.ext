@@ -1,11 +1,14 @@
 #Copyright ReportLab Europe Ltd. 2000-2004
 #see license.txt for license details
 #history http://www.reportlab.co.uk/cgi-bin/viewcvs.cgi/public/reportlab/trunk/reportlab/lib/abag.py
-__version__=''' $Id: abag.py 3004 2006-12-19 14:50:51Z rgbecker $ '''
-
+__version__=''' $Id: abag.py 3342 2008-12-12 15:55:34Z andy $ '''
+__doc__='''Data structure to hold a collection of attributes, used by styles.'''
 class ABag:
     """
     'Attribute Bag' - a trivial BAG class for holding attributes.
+
+    This predates modern Python.  Doing this again, we'd use a subclass
+    of dict.
 
     You may initialize with keyword arguments.
     a = ABag(k0=v0,....,kx=vx,....) ==> getattr(a,'kx')==vx

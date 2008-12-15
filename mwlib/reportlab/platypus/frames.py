@@ -2,9 +2,9 @@
 #see license.txt for license details
 #history http://www.reportlab.co.uk/cgi-bin/viewcvs.cgi/public/reportlab/trunk/reportlab/platypus/frames.py
 
-__version__=''' $Id: frames.py 3207 2008-02-13 10:58:03Z rgbecker $ '''
+__version__=''' $Id: frames.py 3345 2008-12-12 17:55:22Z damian $ '''
 
-__doc__="""
+__doc__="""A frame is a container for content on a page.
 """
 
 import logging
@@ -33,7 +33,7 @@ class Frame:
     After creation a Frame is not usually manipulated directly by the
     applications program -- it is used internally by the platypus modules.
 
-    Here is a diagramatid abstraction for the definitional part of a Frame
+    Here is a diagramatid abstraction for the definitional part of a Frame::
 
                 width                    x2,y2
         +---------------------------------+
@@ -51,8 +51,8 @@ class Frame:
         +---------------------------------+
         (x1,y1) <-- lower left corner
 
-        NOTE!! Frames are stateful objects.  No single frame should be used in
-        two documents at the same time (especially in the presence of multithreading.
+    NOTE!! Frames are stateful objects.  No single frame should be used in
+    two documents at the same time (especially in the presence of multithreading.
     '''
     def __init__(self, x1, y1, width,height, leftPadding=6, bottomPadding=6,
             rightPadding=6, topPadding=6, id=None, showBoundary=0,
@@ -91,6 +91,22 @@ class Frame:
         else:
             self.__dict__[a] = v
 
+    def _saveGeom(self, **kwds):
+        if not self.__dict__.setdefault('_savedGeom',{}):
+            for ga in _geomAttr:
+                ga = '_'+ga
+                self.__dict__['_savedGeom'][ga] = self.__dict__[ga]
+        for k,v in kwds.iteritems():
+            setattr(self,k,v)
+
+    def _restoreGeom(self):
+        if self.__dict__.get('_savedGeom',None):
+            for ga in _geomAttr:
+                ga = '_'+ga
+                self.__dict__[ga] = self.__dict__[ga]['_savedGeom']
+                del self.__dict__['_savedGeom']
+            self._geom()
+
     def _geom(self):
         self._x2 = self._x1 + self._width
         self._y2 = self._y1 + self._height
@@ -101,6 +117,7 @@ class Frame:
         self._aH = self._y2 - self._y1p - self._topPadding
 
     def _reset(self):
+        self._restoreGeom()
         #drawing starts at top left
         self._x = self._x1 + self._leftPadding
         self._y = self._y2 - self._topPadding
@@ -122,48 +139,52 @@ class Frame:
         Raises a LayoutError if the object is too wide,
         or if it is too high for a totally empty frame,
         to avoid infinite loops"""
-        if getattr(flowable,'frameAction',None):
-            flowable.frameAction(self)
-            return 1
+        flowable._frame = self
+        flowable.canv = canv #so they can use stringWidth etc
+        try:
+            if getattr(flowable,'frameAction',None):
+                flowable.frameAction(self)
+                return 1
 
-        y = self._y
-        p = self._y1p
-        s = 0
-        aW = self._getAvailableWidth()
-        if not self._atTop:
-            s =flowable.getSpaceBefore()
-            if self._oASpace:
-                s = max(s-self._prevASpace,0)
-        h = y - p - s
-        if h>0:
-            flowable._frame = self
-            flowable.canv = canv #so they can use stringWidth etc
-            w, h = flowable.wrap(aW, h)
-            del flowable.canv, flowable._frame
-        else:
-            return 0
+            y = self._y
+            p = self._y1p
+            s = 0
+            aW = self._getAvailableWidth()
+            if not self._atTop:
+                s =flowable.getSpaceBefore()
+                if self._oASpace:
+                    s = max(s-self._prevASpace,0)
+            h = y - p - s
+            if h>0:
+                w, h = flowable.wrap(aW, h)
+            else:
+                return 0
 
-        h += s
-        y -= h
+            h += s
+            y -= h
 
-        if y < p-_FUZZ:
-            if not rl_config.allowTableBoundsErrors and ((h>self._aH or w>aW) and not trySplit):
-                from reportlab.platypus.doctemplate import LayoutError
-                raise LayoutError("Flowable %s (%sx%s points) too large for frame (%sx%s points)." % (
-                    flowable.__class__, w,h, aW,self._aH))
-            return 0
-        else:
-            #now we can draw it, and update the current point.
-            flowable._frame = self
-            flowable.drawOn(canv, self._x + self._leftExtraIndent, y, _sW=aW-w)
-            if self._debug: logger.debug('drew %s' % flowable.identity())
-            del flowable._frame
-            s = flowable.getSpaceAfter()
-            y -= s
-            if self._oASpace: self._prevASpace = s
-            if y!=self._y: self._atTop = 0
-            self._y = y
-            return 1
+            if y < p-_FUZZ:
+                if not rl_config.allowTableBoundsErrors and ((h>self._aH or w>aW) and not trySplit):
+                    from reportlab.platypus.doctemplate import LayoutError
+                    raise LayoutError("Flowable %s (%sx%s points) too large for frame (%sx%s points)." % (
+                        flowable.__class__, w,h, aW,self._aH))
+                return 0
+            else:
+                #now we can draw it, and update the current point.
+                flowable.drawOn(canv, self._x + self._leftExtraIndent, y, _sW=aW-w)
+                flowable.canv=canv
+                if self._debug: logger.debug('drew %s' % flowable.identity())
+                s = flowable.getSpaceAfter()
+                y -= s
+                if self._oASpace: self._prevASpace = s
+                if y!=self._y: self._atTop = 0
+                self._y = y
+                return 1
+        finally:
+            #sometimes canv/_frame aren't still on the flowable
+            for a in ('canv', '_frame'):
+                if hasattr(flowable,a):
+                    delattr(flowable,a)
 
     add = _add
 
@@ -172,7 +193,10 @@ class Frame:
         y = self._y
         p = self._y1p
         s = 0
-        if not self._atTop: s = flowable.getSpaceBefore()
+        if not self._atTop:
+            s = flowable.getSpaceBefore()
+            if self._oASpace:
+                s = max(s-self._prevASpace,0)
         flowable.canv = canv    #some flowables might need this
         r = flowable.split(self._aW, y-p-s)
         del flowable.canv
@@ -220,3 +244,6 @@ class Frame:
             else:
                 #leave it in the list for later
                 break
+
+    def add_generated_content(self,*C):
+        self.__dict__.setdefault('_generated_content',[]).extend(C)

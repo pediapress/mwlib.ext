@@ -4,9 +4,12 @@
 # signsandsymbols.py
 # A collection of new widgets
 # author: John Precedo (johnp@reportlab.com)
-"""This file is a collection of widgets to produce some common signs and symbols.
+
+__version__=''' $Id: signsandsymbols.py 3345 2008-12-12 17:55:22Z damian $ '''
+__doc__="""This file is a collection of widgets to produce some common signs and symbols.
 
 Widgets include:
+
 - ETriangle (an equilateral triangle),
 - RTriangle (a right angled triangle),
 - Octagon,
@@ -23,7 +26,6 @@ Widgets include:
 - ArrowOne, and
 - ArrowTwo
 """
-__version__=''' $Id: signsandsymbols.py 2385 2004-06-17 15:26:05Z rgbecker $ '''
 
 from reportlab.lib import colors
 from reportlab.lib.validators import *

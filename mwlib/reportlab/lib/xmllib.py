@@ -2,6 +2,10 @@
 # Author: Sjoerd Mullender.
 
 # sgmlop support added by fredrik@pythonware.com (May 19, 1998)
+__version__=''' $Id: xmllib.py 3342 2008-12-12 15:55:34Z andy $ '''
+__doc__='''From before xmllib was in the Python standard library.
+
+Probably ought to be removed'''
 
 import re
 import string

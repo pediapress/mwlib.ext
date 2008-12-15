@@ -1,7 +1,7 @@
 #Copyright ReportLab Europe Ltd. 2000-2004
 #see license.txt for license details
 #history http://www.reportlab.co.uk/cgi-bin/viewcvs.cgi/public/reportlab/trunk/reportlab/pdfbase/pdfutils.py
-__version__=''' $Id: pdfutils.py 3144 2007-09-21 13:21:23Z rgbecker $ '''
+__version__=''' $Id: pdfutils.py 3298 2008-09-17 16:02:22Z rgbecker $ '''
 __doc__=''
 # pdfutils.py - everything to do with images, streams,
 # compression, and some constants
@@ -23,9 +23,8 @@ def _chunker(src,dst=[],chunkSize=60):
 #  of images will offer a vast speedup.
 #
 ##########################################################
-
 _mode2cs = {'RGB':'RGB', 'CMYK': 'CMYK', 'L': 'G'}
-
+_mode2bpp = {'RGB': 3, 'CMYK':4, 'L':1}
 def makeA85Image(filename,IMG=None):
     import zlib
     img = ImageReader(filename)
@@ -41,7 +40,7 @@ def makeA85Image(filename,IMG=None):
     append('/W %s /H %s /BPC 8 /CS /%s /F [/A85 /Fl]' % (imgwidth, imgheight,_mode2cs[img.mode]))
     append('ID')
     #use a flate filter and Ascii Base 85
-    assert(len(raw) == imgwidth * imgheight, "Wrong amount of data for image")
+    assert len(raw) == imgwidth * imgheight*_mode2bpp[img.mode], "Wrong amount of data for image"
     compressed = zlib.compress(raw)   #this bit is very fast...
     encoded = _AsciiBase85Encode(compressed) #...sadly this may not be
 
@@ -416,7 +415,6 @@ def readJPEGInfo(image):
                 y = struct.unpack('B', image.read(1))
                 color =  y[0]
                 return width, height, color
-                done = 1
             elif x[0] in unsupportedMarkers:
                 raise PDFError('JPEG Unsupported JPEG marker: %0.2x' % x[0])
             elif x[0] not in noParamMarkers:

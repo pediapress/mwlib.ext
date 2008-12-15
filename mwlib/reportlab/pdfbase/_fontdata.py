@@ -2,15 +2,15 @@
 #see license.txt for license details
 #history http://www.reportlab.co.uk/cgi-bin/viewcvs.cgi/public/reportlab/trunk/reportlab/pdfbase/_fontdata.py
 #$Header $
-__version__=''' $Id: _fontdata.py 3110 2007-07-10 16:40:30Z rgbecker $ '''
-__doc__="""
-    database of font related things
-    standardFonts       tuple of the 14 standard string font names
-    standardEncodings   tuple of the known standard font names
-    encodings           a mapping object from standard encoding names (and minor variants)
-                        to the encoding vectors ie the tuple of string glyph names
-    widthsByFontGlyph   fontname x glyphname --> width of glyph
-    widthVectorsByFont  fontName -> vector of widths
+__version__=''' $Id: _fontdata.py 3345 2008-12-12 17:55:22Z damian $ '''
+__doc__="""Database of font related things
+
+    - standardFonts - tuple of the 14 standard string font names
+    - standardEncodings - tuple of the known standard font names
+    - encodings - a mapping object from standard encoding names (and minor variants)
+      to the encoding vectors ie the tuple of string glyph names
+    - widthsByFontGlyph - fontname x glyphname --> width of glyph
+    - widthVectorsByFont - fontName -> vector of widths 
 """
 import UserDict, os, sys
 

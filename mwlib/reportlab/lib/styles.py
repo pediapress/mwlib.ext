@@ -1,8 +1,20 @@
 #Copyright ReportLab Europe Ltd. 2000-2004
 #see license.txt for license details
 #history http://www.reportlab.co.uk/cgi-bin/viewcvs.cgi/public/reportlab/trunk/reportlab/lib/styles.py
-__version__=''' $Id: styles.py 3231 2008-06-03 16:42:41Z rgbecker $ '''
+__version__=''' $Id: styles.py 3342 2008-12-12 15:55:34Z andy $ '''
+__doc__='''Classes for ParagraphStyle and similar things.
 
+
+A style is a collection of attributes, but with some extra features
+to allow 'inheritance' from a parent, and to ensure nobody makes
+changes after construction.
+
+ParagraphStyle shows all the attributes available for formatting
+paragraphs.
+
+getSampleStyleSheet()  returns a stylesheet you can use for initial
+development, with a few basic heading and text styles.
+'''
 from reportlab.lib.colors import white, black
 from reportlab.lib.enums import TA_LEFT, TA_CENTER
 
@@ -102,20 +114,26 @@ class LineStyle(PropertySet):
         #etc. etc.
 
 class StyleSheet1:
-    """This may or may not be used.  The idea is to
+    """
+    This may or may not be used.  The idea is to:
+    
     1. slightly simplify construction of stylesheets;
+    
     2. enforce rules to validate styles when added
        (e.g. we may choose to disallow having both
        'heading1' and 'Heading1' - actual rules are
        open to discussion);
+       
     3. allow aliases and alternate style lookup
        mechanisms
+       
     4. Have a place to hang style-manipulation
        methods (save, load, maybe support a GUI
        editor)
-       Access is via getitem, so they can be
-       compatible with plain old dictionaries.
-       """
+   
+    Access is via getitem, so they can be
+    compatible with plain old dictionaries.
+    """
     def __init__(self):
         self.byName = {}
         self.byAlias = {}

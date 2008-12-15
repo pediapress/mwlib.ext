@@ -1,4 +1,4 @@
-"""An experimental SVG renderer for the ReportLab graphics framework.
+__doc__="""An experimental SVG renderer for the ReportLab graphics framework.
 
 This will create SVG code from the ReportLab Graphics API (RLG).
 To read existing SVG code and convert it into ReportLab graphics
@@ -214,7 +214,7 @@ class SVGCanvas:
         return a copy of string s with special characters in postscript strings
         escaped with backslashes.
         Have not handled characters that are converted normally in python strings
-        i.e. \n -> newline
+        i.e. \\n -> newline
         """
 
         str = string.replace(s, chr(0x5C), r'\\' )

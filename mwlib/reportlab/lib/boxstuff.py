@@ -1,6 +1,7 @@
 #Copyright ReportLab Europe Ltd. 2000-2006
 #see license.txt for license details
-__version__=''' $Id: boxstuff.py 2960 2006-08-23 21:41:33Z andy $ '''
+__version__=''' $Id: boxstuff.py 3342 2008-12-12 15:55:34Z andy $ '''
+__doc__='''Utility functions to position and resize boxes within boxes'''
 def anchorAdjustXY(anchor,x,y,width,height):
     if anchor not in ('sw','s','se'):
         if anchor in ('e','c','w'):

@@ -1,9 +1,10 @@
 #Copyright ReportLab Europe Ltd. 2000-2004
 #see license.txt for license details
 #history http://www.reportlab.co.uk/cgi-bin/viewcvs.cgi/public/reportlab/trunk/reportlab/graphics/charts/areas.py
-"""This module defines a Area mixin classes
-"""
-__version__=''' $Id: areas.py 2385 2004-06-17 15:26:05Z rgbecker $ '''
+
+__version__=''' $Id: areas.py 3345 2008-12-12 17:55:22Z damian $ '''
+__doc__='''This module defines a Area mixin classes'''
+
 from reportlab.lib.validators import isNumber, isColor, isColorOrNone, isNoneOrShape
 from reportlab.graphics.widgetbase import Widget
 from reportlab.graphics.shapes import Rect, Group, Line, Polygon

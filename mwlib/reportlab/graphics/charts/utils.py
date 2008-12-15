@@ -1,8 +1,9 @@
 #Copyright ReportLab Europe Ltd. 2000-2004
 #see license.txt for license details
 #history http://www.reportlab.co.uk/cgi-bin/viewcvs.cgi/public/reportlab/trunk/reportlab/graphics/charts/utils.py
-"Utilities used here and there."
-__version__=''' $Id: utils.py 3138 2007-09-12 11:50:18Z rgbecker $ '''
+
+__version__=''' $Id: utils.py 3345 2008-12-12 17:55:22Z damian $ '''
+__doc__="Utilities used here and there."
 
 from time import mktime, gmtime, strftime
 import string
@@ -191,29 +192,29 @@ def ticks(lower, upper, n=(4,5,6,7,8,9), split=1, percent=0, grid=None):
         return T
 
 def findNones(data):
+    m = len(data)
     if None in data:
         b = 0
-        m = len(data)
         while b<m and data[b] is None:
             b += 1
         if b==m: return data
-        l = 1
-        while data[-l] is None:
-            l += 1
-        if b: data = data[b:]
-        if l: data = data[:-l]
+        l = m-1
+        while data[l] is None:
+            l -= 1
+        l+=1
+        if b or l: data = data[b:l]
         I = [i for i in xrange(len(data)) if data[i] is None]
         for i in I:
             data[i] = 0.5*(data[i-1]+data[i+1])
         return b, l, data
-    return 0,0,data
+    return 0,m,data
 
 def pairFixNones(pairs):
     Y = [x[1] for x in pairs]
     b,l,nY = findNones(Y)
-    if b or l or nY!=Y:
-        if b: pairs = pairs[b:]
-        if l: pairs = pairs[:-l]
+    m = len(Y)
+    if b or l<m or nY!=Y:
+        if b or l<m: pairs = pairs[b:l]
         pairs = [(x[0],y) for x,y in zip(pairs,nY)]
     return pairs
 

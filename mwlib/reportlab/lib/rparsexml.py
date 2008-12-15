@@ -1,23 +1,34 @@
-"""Radically simple xml parsing
+"""Very simple and fast XML parser, used for intra-paragraph text.
 
-Example parse
+Devised by Aaron Watters in the bad old days before Python had fast
+parsers available.  Constructs the lightest possible in-memory
+representation; parses most files we have seen in pure python very
+quickly.
 
-<this type="xml">text <b>in</b> xml</this>
+The output structure is the same as the one produced by pyRXP,
+our validating C-based parser, which was written later.  It will
+use pyRXP if available.
 
-( "this",
-  {"type": "xml"},
-  [ "text ",
-    ("b", None, ["in"], None),
-    " xml"
-    ]
-   None )
+This is used to parse intra-paragraph markup.
 
-{ 0: "this"
-  "type": "xml"
-  1: ["text ",
-      {0: "b", 1:["in"]},
-      " xml"]
-}
+Example parse::
+
+    <this type="xml">text <b>in</b> xml</this>
+
+    ( "this",
+      {"type": "xml"},
+      [ "text ",
+        ("b", None, ["in"], None),
+        " xml"
+        ]
+       None )
+
+    { 0: "this"
+      "type": "xml"
+      1: ["text ",
+          {0: "b", 1:["in"]},
+          " xml"]
+    }
 
 Ie, xml tag translates to a tuple:
  (name, dictofattributes, contentlist, miscellaneousinfo)
@@ -26,15 +37,15 @@ where miscellaneousinfo can be anything, (but defaults to None)
 (with the intention of adding, eg, line number information)
 
 special cases: name of "" means "top level, no containing tag".
-Top level parse always looks like this
+Top level parse always looks like this::
 
-   ("", list, None, None)
+    ("", list, None, None)
 
  contained text of None means <simple_tag\>
 
-In order to support stuff like
+In order to support stuff like::
 
-   <this></this><one></one>
+    <this></this><one></one>
 
 AT THE MOMENT &amp; ETCETERA ARE IGNORED. THEY MUST BE PROCESSED
 IN A POST-PROCESSING STEP.
@@ -60,9 +71,9 @@ try:
                         srcName='string input',
                         ReturnUTF8 = 1,
                         )
-    def parsexml(xmlText, oneOutermostTag=0,eoCB=None,entityReplacer=None):
+    def parsexml(xmlText, oneOutermostTag=0,eoCB=None,entityReplacer=None,parseOpts={}):
         pyRXP_parser.eoCB = eoCB
-        p = pyRXP_parser.parse(xmlText)
+        p = pyRXP_parser.parse(xmlText,**parseOpts)
         return oneOutermostTag and p or ('',None,[p],None)
 except ImportError:
     simpleparse = 1

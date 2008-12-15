@@ -1,7 +1,8 @@
 #Copyright ReportLab Europe Ltd. 2000-2004
 #see license.txt for license details
 #history http://www.reportlab.co.uk/cgi-bin/viewcvs.cgi/public/reportlab/trunk/reportlab/pdfbase/ttfonts.py
-"""TrueType font support
+__version__ = '$Id: ttfonts.py 3345 2008-12-12 17:55:22Z damian $'
+__doc__="""TrueType font support
 
 This defines classes to represent TrueType fonts.  They know how to calculate
 their own width and how to write themselves into PDF files.  They support
@@ -18,7 +19,7 @@ contents of those will depend on the actual characters used for printing.
 To support dynamic font subsetting a concept of "dynamic font" was introduced.
 Dynamic Fonts have a _dynamicFont attribute set to 1.
 
-Dynamic fonts have the following additional functions:
+Dynamic fonts have the following additional functions::
 
     def splitString(self, text, doc):
         '''Splits text into a number of chunks, each of which belongs to a
@@ -35,11 +36,11 @@ Dynamic fonts have the following additional functions:
 You must never call PDFDocument.getInternalFontName for dynamic fonts.
 
 If you have a traditional static font, mapping to PDF text output operators
-is simple:
+is simple::
 
    '%s 14 Tf (%s) Tj' % (getInternalFontName(psfontname), text)
 
-If you have a dynamic font, use this instead:
+If you have a dynamic font, use this instead::
 
    for subset, chunk in font.splitString(text, doc):
        '%s 14 Tf (%s) Tj' % (font.getSubsetInternalName(subset, doc), chunk)
@@ -50,8 +51,6 @@ Oh, and that 14 up there is font size.)
 
 Canvas and TextObject have special support for dynamic fonts.
 """
-
-__version__ = '$Id: ttfonts.py 3119 2007-07-19 14:20:46Z rgbecker $'
 
 import string
 from types import StringType, UnicodeType
@@ -412,27 +411,32 @@ class TTFontFile(TTFontParser):
         self.extractInfo(charInfo)
 
     def extractInfo(self, charInfo=1):
-        """Extract typographic information from the loaded font file.
+        """
+        Extract typographic information from the loaded font file.
 
-        The following attributes will be set:
-            name         - PostScript font name
-            flags        - Font flags
-            ascent       - Typographic ascender in 1/1000ths of a point
-            descent      - Typographic descender in 1/1000ths of a point
-            capHeight    - Cap height in 1/1000ths of a point (0 if not available)
-            bbox         - Glyph bounding box [l,t,r,b] in 1/1000ths of a point
-            _bbox        - Glyph bounding box [l,t,r,b] in unitsPerEm
-            unitsPerEm   - Glyph units per em
-            italicAngle  - Italic angle in degrees ccw
-            stemV        - stem weight in 1/1000ths of a point (approximate)
-        If charInfo is true, the following will also be set:
-            defaultWidth - default glyph width in 1/1000ths of a point
-            charWidths   - dictionary of character widths for every supported
-                           UCS character code
-
+        The following attributes will be set::
+        
+            name         PostScript font name
+            flags        Font flags
+            ascent       Typographic ascender in 1/1000ths of a point
+            descent      Typographic descender in 1/1000ths of a point
+            capHeight    Cap height in 1/1000ths of a point (0 if not available)
+            bbox         Glyph bounding box [l,t,r,b] in 1/1000ths of a point
+            _bbox        Glyph bounding box [l,t,r,b] in unitsPerEm
+            unitsPerEm   Glyph units per em
+            italicAngle  Italic angle in degrees ccw
+            stemV        stem weight in 1/1000ths of a point (approximate)
+        
+        If charInfo is true, the following will also be set::
+        
+            defaultWidth   default glyph width in 1/1000ths of a point
+            charWidths     dictionary of character widths for every supported UCS character
+                           code
+        
         This will only work if the font has a Unicode cmap (platform 3,
         encoding 1, format 4 or platform 0 any encoding format 4).  Setting
-        charInfo to false avoids this requirement.
+        charInfo to false avoids this requirement
+        
         """
         # name - Naming table
         name_offset = self.seek_table("name")
@@ -478,7 +482,7 @@ class TTFontFile(TTFontParser):
                 names[nameId] = N
                 nameCount -= 1
                 if nameCount==0: break
-        psName = names[6]
+        psName = names[6].replace(" ", "-")  #Dinu Gherman's fix for font names with spaces
         if not psName:
             raise TTFError, "Could not find PostScript font name"
         for c in psName:

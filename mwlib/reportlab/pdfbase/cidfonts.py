@@ -2,7 +2,7 @@
 #see license.txt for license details
 #history http://www.reportlab.co.uk/cgi-bin/viewcvs.cgi/public/reportlab/trunk/reportlab/pdfbase/cidfonts.py
 #$Header $
-__version__=''' $Id: cidfonts.py 2959 2006-08-18 13:09:15Z rgbecker $ '''
+__version__=''' $Id: cidfonts.py 3344 2008-12-12 17:01:47Z tim $ '''
 __doc__="""CID (Asian multi-byte) font support.
 
 This defines classes to represent CID fonts.  They know how to calculate
@@ -12,8 +12,11 @@ import os
 from types import ListType, TupleType, DictType
 from string import find, split, strip
 import marshal
-import md5
 import time
+try:
+    from hashlib import md5
+except ImportError:
+    from md5 import md5
 
 import reportlab
 from reportlab.pdfbase import pdfmetrics
@@ -88,7 +91,7 @@ class CIDEncoding(pdfmetrics.Encoding):
                 self.parseCMAPFile(name)
 
     def _hash(self, text):
-        hasher = md5.new()
+        hasher = md5()
         hasher.update(text)
         return hasher.digest()
 
@@ -254,8 +257,9 @@ class CIDTypeFace(pdfmetrics.TypeFace):
     def _expandWidths(self, compactWidthArray):
         """Expands Adobe nested list structure to get a dictionary of widths.
 
-        Here is an example of such a structure.
-        (
+        Here is an example of such a structure.::
+        
+            (
             # starting at character ID 1, next n  characters have the widths given.
             1,  (277,305,500,668,668,906,727,305,445,445,508,668,305,379,305,539),
             # all Characters from ID 17 to 26 are 668 em units wide
@@ -268,7 +272,8 @@ class CIDTypeFace(pdfmetrics.TypeFace):
                  449, 246, 449, 668),
             # these must be half width katakana and the like.
             231, 632, 500
-        )
+            )
+        
         """
         data = compactWidthArray[:]
         widths = {}

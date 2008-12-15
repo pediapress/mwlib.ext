@@ -2,7 +2,7 @@
 #see license.txt for license details
 #history http://www.reportlab.co.uk/cgi-bin/viewcvs.cgi/public/reportlab/trunk/reportlab/pdfbase/_cidfontdata.py
 #$Header $
-__version__=''' $Id: _cidfontdata.py 2901 2006-05-22 23:02:22Z andy $ '''
+__version__=''' $Id: _cidfontdata.py 3344 2008-12-12 17:01:47Z tim $ '''
 __doc__="""
 This defines additional static data to support CID fonts.
 
@@ -15,11 +15,12 @@ Each font is described as a big nested dictionary.  This lets us keep
 code out of the module altogether and avoid circular dependencies.
 
 The encoding and font data are grouped by some standard 'language
-prefixes':
-   chs = Chinese Simplified (mainland)
-   cht = Chinese Traditional (Taiwan)
-   kor = Korean
-   jpn = Japanese
+prefixes'::
+
+    chs = Chinese Simplified (mainland)
+    cht = Chinese Traditional (Taiwan)
+    kor = Korean
+    jpn = Japanese
 """
 
 

@@ -2,12 +2,12 @@
 #Copyright ReportLab Europe Ltd. 2000-2004
 #see license.txt for license details
 #history http://www.reportlab.co.uk/cgi-bin/viewcvs.cgi/public/reportlab/trunk/reportlab/lib/tocindex.py
-__version__=''' $Id: tocindex.py 2385 2004-06-17 15:26:05Z rgbecker $ '''
-__doc__=''
-"""
+__version__=''' $Id: tocindex.py 3342 2008-12-12 15:55:34Z andy $ '''
+__doc__="""Experimental Table-of-Contents and Index objects.
+
 This module will contain standard Table of Contents and Index objects.
 under development, and pending certain hooks adding in DocTemplate
-As of today, it onyl handles the formatting aspect of TOCs
+As of today, it only handles the formatting aspect of TOCs
 """
 
 import string

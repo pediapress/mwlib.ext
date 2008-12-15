@@ -1,7 +1,7 @@
 #Copyright ReportLab Europe Ltd. 2000-2004
 #see license.txt for license details
 #history http://www.reportlab.co.uk/cgi-bin/viewcvs.cgi/public/reportlab/trunk/reportlab/platypus/tables.py
-__version__=''' $Id: tables.py 3237 2008-06-18 13:03:25Z rgbecker $ '''
+__version__=''' $Id: tables.py 3344 2008-12-12 17:01:47Z tim $ '''
 
 __doc__="""
 Tables are created by passing the constructor a tuple of column widths, a tuple of row heights and the data in
@@ -797,7 +797,7 @@ class Table(Flowable):
         if a cell is part of a "spanned" range.
         self._spanRanges shows the 'coords' in integers of each
         'cell range', or None if it was clobbered:
-          (col, row) -> (col0, row0, col1, row1)
+        (col, row) -> (col0, row0, col1, row1)
 
         Any cell not in the key is not part of a spanned region
         """
@@ -843,7 +843,7 @@ class Table(Flowable):
         if a cell is part of a "nosplit" range.
         self._nosplitRanges shows the 'coords' in integers of each
         'cell range', or None if it was clobbered:
-          (col, row) -> (col0, row0, col1, row1)
+        (col, row) -> (col0, row0, col1, row1)
 
         Any cell not in the key is not part of a spanned region
         """
@@ -891,7 +891,8 @@ class Table(Flowable):
         Based on self._spanRanges, which is already known,
         and the widths which were given or previously calculated,
         self._spanRects shows the real coords for drawing:
-          (col, row) -> (x, y, width, height)
+            
+            (col, row) -> (x, y, width, height)
 
         for each cell.  Any cell which 'does not exist' as another
         has spanned over it will get a None entry on the right
@@ -1518,5 +1519,5 @@ LIST_STYLE = TableStyle(
 # of colors e.g. Blue, None, Blue, None as you move
 # down.
 if __name__ == '__main__':
-    from reportlab.test.test_platypus_tables import old_tables_test
+    from tests.test_platypus_tables import old_tables_test
     old_tables_test()

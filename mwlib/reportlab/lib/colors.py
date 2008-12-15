@@ -1,8 +1,18 @@
 #Copyright ReportLab Europe Ltd. 2000-2004
 #see license.txt for license details
 #history http://www.reportlab.co.uk/cgi-bin/viewcvs.cgi/public/reportlab/trunk/reportlab/lib/colors.py
-__version__=''' $Id: colors.py 3208 2008-02-13 11:23:55Z rgbecker $ '''
+__version__=''' $Id: colors.py 3342 2008-12-12 15:55:34Z andy $ '''
+__doc__='''Defines standard colour-handling classes and colour names.
 
+We define standard classes to hold colours in two models:  RGB and CMYK.
+These can be constructed from several popular formats.  We also include
+
+- pre-built colour objects for the HTML standard colours
+
+- pre-built colours used in ReportLab's branding
+
+- various conversion and construction functions
+'''
 import string, math
 from types import StringType, ListType, TupleType
 from reportlab.lib.utils import fp_str

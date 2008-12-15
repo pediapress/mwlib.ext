@@ -1,9 +1,9 @@
 #Copyright ReportLab Europe Ltd. 2000-2004
 #see license.txt for license details
 #history http://www.reportlab.co.uk/cgi-bin/viewcvs.cgi/public/reportlab/trunk/reportlab/graphics/charts/lineplots.py
-"""This module defines a very preliminary Line Plot example.
-"""
-__version__=''' $Id: lineplots.py 3139 2007-09-12 17:15:26Z rgbecker $ '''
+
+__version__=''' $Id: lineplots.py 3345 2008-12-12 17:55:22Z damian $ '''
+__doc__="""This module defines a very preliminary Line Plot example."""
 
 import string, time
 
