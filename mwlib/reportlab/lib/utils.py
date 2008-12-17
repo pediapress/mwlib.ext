@@ -580,6 +580,7 @@ class ImageReader(object):
                     self.fp.close()
                     del self.fp #will become a property in the next statement
                     self.__class__=LazyImageReader
+                    self._cached_readers[self.fileName] = self
                     
                 if haveImages:
                     #detect which library we are using and open the image
@@ -593,7 +594,6 @@ class ImageReader(object):
                     except:
                         raise RuntimeError('Imaging Library not available, unable to import bitmaps only jpegs')
                     self.jpeg_fh = self._jpeg_fh
-                    self._cached_readers[self.fileName] = self
                     self._data = self.fp.read()
                     self._dataA=None
                     self.fp.seek(0)
