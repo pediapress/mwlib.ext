@@ -531,6 +531,8 @@ def _isPILImage(im):
 class ImageReader(object):
     "Wraps up either PIL or Java to get data from bitmaps"
     _cache={}
+    _cached_readers = {}
+    
     def __init__(self, fileName):
         if isinstance(fileName,ImageReader):
             self.__dict__ = fileName.__dict__   #borgize
@@ -569,10 +571,16 @@ class ImageReader(object):
                         data=self._cache.setdefault(md5(data).digest(),data)
                     self.fp=getStringIO(data)
                 elif imageReaderFlags==-1 and isinstance(fileName,(str,unicode)):
+                    if self.fileName in self._cached_readers:
+                        self.__dict__ = self._cached_readers[self.fileName].__dict__
+                        self.__class__ = LazyImageReader
+                        return
+                    
                     #try Ralf Schmitt's re-opening technique of avoiding too many open files
                     self.fp.close()
                     del self.fp #will become a property in the next statement
                     self.__class__=LazyImageReader
+                    
                 if haveImages:
                     #detect which library we are using and open the image
                     if not self._image:
@@ -585,6 +593,7 @@ class ImageReader(object):
                     except:
                         raise RuntimeError('Imaging Library not available, unable to import bitmaps only jpegs')
                     self.jpeg_fh = self._jpeg_fh
+                    self._cached_readers[self.fileName] = self
                     self._data = self.fp.read()
                     self._dataA=None
                     self.fp.seek(0)
