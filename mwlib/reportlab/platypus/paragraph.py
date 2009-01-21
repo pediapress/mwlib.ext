@@ -1,7 +1,7 @@
 #Copyright ReportLab Europe Ltd. 2000-2008
 #see license.txt for license details
 #history http://www.reportlab.co.uk/cgi-bin/viewcvs.cgi/public/reportlab/trunk/reportlab/platypus/paragraph.py
-__version__=''' $Id: paragraph.py 3345 2008-12-12 17:55:22Z damian $ '''
+__version__=''' $Id: paragraph.py 3361 2009-01-13 11:01:49Z jonas $ '''
 __doc__='''The standard paragraph implementation'''
 from string import join, whitespace
 from operator import truth
@@ -12,6 +12,7 @@ from reportlab.platypus.flowables import Flowable
 from reportlab.lib.colors import Color
 from reportlab.lib.enums import TA_LEFT, TA_RIGHT, TA_CENTER, TA_JUSTIFY
 from reportlab.lib.utils import _className
+from reportlab.lib.geomutils import normalizeTRBL
 from reportlab.lib.textsplit import wordSplit, ALL_CANNOT_START
 from copy import deepcopy
 from reportlab.lib.abag import ABag
@@ -223,7 +224,11 @@ def _putFragLine(cur_x, tx, line):
                     func = getattr(tx._canvas,name,None)
                     if not func:
                         raise AttributeError("Missing %s callback attribute '%s'" % (kind,name))
-                    func(tx._canvas,kind,cbDefn.label)
+                    tx._canvas._curr_tx_info=dict(tx=tx,cur_x=cur_x,cur_y=cur_y,leading=leading,xs=tx.XtraState)
+                    try:
+                        func(tx._canvas,kind,cbDefn.label)
+                    finally:
+                        del tx._canvas._curr_tx_info
             if f is words[-1]:
                 if not tx._fontname:
                     tx.setFont(xs.style.fontName,xs.style.fontSize)
@@ -317,7 +322,7 @@ def _justifyDrawParaLineX( tx, offset, line, last=0):
     setXPos(tx,offset)
     extraSpace = line.extraSpace
     nSpaces = line.wordCount - 1
-    if last or not nSpaces or abs(extraSpace)<=1e-8 or line.lineBreak:
+    if last or not nSpaces or abs(extraSpace)<=1e-8 or getattr(line, 'lineBreak', None):
         _putFragLine(offset, tx, line)  #no space modification
     else:
         tx.setWordSpace(extraSpace / float(nSpaces))
@@ -1292,10 +1297,11 @@ class Paragraph(Flowable):
                 canvas.setFillColor(bg)
                 kwds['fill'] = 1
             bp = getattr(style,'borderPadding',0)
-            op(leftIndent-bp,
-                        -bp,
-                        self.width - (leftIndent+style.rightIndent)+2*bp,
-                        self.height+2*bp,
+            tbp, rbp, bbp, lbp = normalizeTRBL(bp)
+            op(leftIndent - lbp,
+                        -bbp,
+                        self.width - (leftIndent+style.rightIndent) + lbp+rbp,
+                        self.height + tbp+bbp,
                         **kwds)
             canvas.restoreState()
 

@@ -1,7 +1,7 @@
 #Copyright ReportLab Europe Ltd. 2000-2004
 #see license.txt for license details
 #history http://www.reportlab.co.uk/cgi-bin/viewcvs.cgi/public/reportlab/trunk/reportlab/platypus/tables.py
-__version__=''' $Id: tables.py 3344 2008-12-12 17:01:47Z tim $ '''
+__version__=''' $Id: tables.py 3351 2009-01-05 13:02:48Z jonas $ '''
 
 __doc__="""
 Tables are created by passing the constructor a tuple of column widths, a tuple of row heights and the data in
@@ -478,7 +478,6 @@ class Table(Flowable):
         return max([stringWidth(x,fontName,fontSize) for x in v])
 
     def _calc_height(self, availHeight, availWidth, H=None, W=None):
-
         H = self._argH
         if not W: W = _calc_pc(self._argW,availWidth)   #widths array
 
@@ -505,11 +504,6 @@ class Table(Flowable):
             FUZZ = rl_config._FUZZ
             while None in H:
                 i = H.index(None)
-                if longTable:
-                    hmax = i
-                    height = reduce(operator.add, H[:i], 0)
-                    # we can stop if we have filled up all available room
-                    if height > availHeight: break
                 V = self._cellvalues[i] # values for row i
                 S = self._cellStyles[i] # styles for row i
                 h = 0
@@ -547,6 +541,12 @@ class Table(Flowable):
                                 t = 0
                     if t>h: h = t   #record a new maximum
                 H[i] = h
+                # we can stop if we have filled up all available room
+                if longTable:
+                    hmax = i
+                    height = reduce(operator.add, H[:i], 0)
+                    if height > availHeight:
+                        break
             if None not in H: hmax = lim
 
             if spanCons:

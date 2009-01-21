@@ -2,7 +2,7 @@
 #see license.txt for license details
 #history http://www.reportlab.co.uk/cgi-bin/viewcvs.cgi/public/reportlab/trunk/reportlab/platypus/doctemplate.py
 
-__version__=''' $Id: doctemplate.py 3344 2008-12-12 17:01:47Z tim $ '''
+__version__=''' $Id: doctemplate.py 3361 2009-01-13 11:01:49Z jonas $ '''
 
 __doc__="""
 This module contains the core structure of platypus.
@@ -340,7 +340,8 @@ class BaseDocTemplate:
                     'pageCompression':None,
                     '_pageBreakQuick':1,
                     'rotation':0,
-                    '_debug':0}
+                    '_debug':0,
+                    'encrypt': None}
     _invalidInitArgs = ()
     _firstPageTemplateIndex = 0
 
@@ -716,6 +717,8 @@ class BaseDocTemplate:
                                 pagesize=self.pagesize,
                                 invariant=self.invariant,
                                 pageCompression=self.pageCompression)
+ 
+        getattr(self.canv,'setEncrypt',lambda x: None)(self.encrypt)
 
         self.canv.setAuthor(self.author)
         self.canv.setTitle(self.title)

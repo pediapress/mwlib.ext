@@ -1,7 +1,7 @@
 #!/bin/env python
 #Copyright ReportLab Europe Ltd. 2000-2004
 #see license.txt for license details
-__version__=''' $Id: corp.py 3342 2008-12-12 15:55:34Z andy $ '''
+__version__=''' $Id: corp.py 3379 2009-01-19 17:09:10Z tim $ '''
 __doc__="""Generate ReportLab logo in a variety of sizes and formats.
 
 
@@ -282,17 +282,11 @@ class RL_BusinessCard(Widget):
         self.web="www.reportlab.com"
         self.rh_blurb_top = ["London office:",
                      "ReportLab Europe Ltd",
-                     "Lombard Business Park",
-                     "8 Lombard Road",
+                     "Media House",
+                     "3 Palmerston Road",
                      "Wimbledon",
-                     "London SW19 3TZ",
+                     "London SW19 1PG",
                      "United Kingdom"]
-        self.rh_blurb_bottom = ["New York office:",
-                     "ReportLab Inc",
-                     "219 Harper Street",
-                     "Highland Park",
-                     "New Jersey  08904",
-                     "USA"]
 
     def demo(self):
         D = Drawing(self.width, self.height)
@@ -353,17 +347,7 @@ class RL_BusinessCard(Widget):
                             textAnchor = 'start',
                             text = leftDetails[f-1]))
 
-        rightText=self.rh_blurb_bottom
-        rightText.reverse()
-        for f in range(len(rightText),0,-1):
-            g.add(String(x = self.width-((self.borderWidth/5.0)),
-                            y = (self.borderWidth/5.0)+((f-1)*(5*1.2)),
-                            fontSize = 5,
-                            fillColor = self.strokeColor,
-                            fontName = "Helvetica",
-                            textAnchor = 'end',
-                            text = rightText[f-1]))
-
+        
         ty = (self.height-self.borderWidth-(self.borderWidth/5.0)+2)
 #       g.add(Line(self.borderWidth, ty, self.borderWidth+(self.borderWidth/5.0), ty))
 #       g.add(Line(self.borderWidth+(self.borderWidth/5.0), ty, self.borderWidth+(self.borderWidth/5.0),

@@ -2,7 +2,7 @@
 #Copyright ReportLab Europe Ltd. 2000-2004
 #see license.txt for license details
 #history http://www.reportlab.co.uk/cgi-bin/viewcvs.cgi/public/reportlab/trunk/reportlab/lib/tocindex.py
-__version__=''' $Id: tocindex.py 3342 2008-12-12 15:55:34Z andy $ '''
+__version__=''' $Id: tocindex.py 3359 2009-01-12 15:23:05Z jonas $ '''
 __doc__="""Experimental Table-of-Contents and Index objects.
 
 This module will contain standard Table of Contents and Index objects.
@@ -203,7 +203,7 @@ def getSampleTOCData(depth=3):
 def getSampleStory(depth=3):
     """Makes a story with lots of paragraphs.  Uses the random
     TOC data and makes paragraphs to correspond to each."""
-    from reportlab.platypus.doctemplate import randomText
+    from reportlab.lib.randomtext import randomText
     from random import randint
 
     styles = getSampleStyleSheet()
