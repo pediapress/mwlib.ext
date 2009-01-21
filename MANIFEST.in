@@ -96,9 +96,11 @@ include mwlib/reportlab/lib/extformat.py
 include mwlib/reportlab/lib/fontfinder.py
 include mwlib/reportlab/lib/fonts.py
 include mwlib/reportlab/lib/formatters.py
+include mwlib/reportlab/lib/geomutils.py
 include mwlib/reportlab/lib/logger.py
 include mwlib/reportlab/lib/normalDate.py
 include mwlib/reportlab/lib/pagesizes.py
+include mwlib/reportlab/lib/pdfencrypt.py
 include mwlib/reportlab/lib/randomtext.py
 include mwlib/reportlab/lib/rltempfile.py
 include mwlib/reportlab/lib/rparsexml.py
