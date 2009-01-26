@@ -194,7 +194,10 @@ class Canvas(textobject._PDFColorSetter):
         if encrypt:
             from reportlab.lib import pdfencrypt
             if isinstance(encrypt, basestring):
-                userPass = encrypt.encode('utf-8') if isinstance(encrypt, unicode) else encrypt
+                if isinstance(encrypt, unicode):
+                    userPass = encrypt.encode('utf-8')
+                else:
+                    userPass = encrypt
                 encrypt = pdfencrypt.StandardEncryption(userPass)
                 encrypt.setAllPermissions(1)
             elif not isinstance(encrypt, pdfencrypt.StandardEncryption):
