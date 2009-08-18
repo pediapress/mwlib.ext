@@ -527,11 +527,14 @@ def _isPILImage(im):
         return isinstance(im,Image)
     except ImportError:
         return 0
+    
+from mwlib import lrucache
 
 class ImageReader(object):
     "Wraps up either PIL or Java to get data from bitmaps"
     _cache={}
     _cached_readers = {}
+    _data_cache = lrucache.lrucache(5)
     
     def __init__(self, fileName):
         if isinstance(fileName,ImageReader):
@@ -606,7 +609,7 @@ class ImageReader(object):
                 else:
                     raise
 
-    def _read_image(self,fp):
+    def _read_image(self, fp):
         if sys.platform[0:4] == 'java':
             from javax.imageio import ImageIO
             return ImageIO.read(fp)
@@ -633,6 +636,11 @@ class ImageReader(object):
 
     def getRGBData(self):
         "Return byte array of RGB data as string"
+        try:
+            return self._data_cache[self]
+        except KeyError:
+            pass
+        
         if self._data is None:
             self._dataA = None
             if sys.platform[0:4] == 'java':
@@ -664,7 +672,14 @@ class ImageReader(object):
                     im = im.convert('RGB')
                     self.mode = 'RGB'
                 self._data = im.tostring()
-        return self._data
+
+        if len(self._data)<128*1024:
+            return self._data
+        
+        retval = self._data
+        self._data_cache[self] = retval
+        self._data = None
+        return retval
 
     def getImageData(self):
         width, height = self.getSize()
