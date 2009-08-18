@@ -527,10 +527,15 @@ def _isPILImage(im):
         return isinstance(im,Image)
     except ImportError:
         return 0
+    
+from mwlib import lrucache
 
 class ImageReader(object):
     "Wraps up either PIL or Java to get data from bitmaps"
     _cache={}
+    _cached_readers = {}
+    _data_cache = lrucache.lrucache(5)
+    
     def __init__(self, fileName):
         if isinstance(fileName,ImageReader):
             self.__dict__ = fileName.__dict__   #borgize
@@ -569,10 +574,17 @@ class ImageReader(object):
                         data=self._cache.setdefault(md5(data).digest(),data)
                     self.fp=getStringIO(data)
                 elif imageReaderFlags==-1 and isinstance(fileName,(str,unicode)):
+                    if self.fileName in self._cached_readers:
+                        self.__dict__ = self._cached_readers[self.fileName].__dict__
+                        self.__class__ = LazyImageReader
+                        return
+                    
                     #try Ralf Schmitt's re-opening technique of avoiding too many open files
                     self.fp.close()
                     del self.fp #will become a property in the next statement
                     self.__class__=LazyImageReader
+                    self._cached_readers[self.fileName] = self
+                    
                 if haveImages:
                     #detect which library we are using and open the image
                     if not self._image:
@@ -597,7 +609,7 @@ class ImageReader(object):
                 else:
                     raise
 
-    def _read_image(self,fp):
+    def _read_image(self, fp):
         if sys.platform[0:4] == 'java':
             from javax.imageio import ImageIO
             return ImageIO.read(fp)
@@ -624,6 +636,11 @@ class ImageReader(object):
 
     def getRGBData(self):
         "Return byte array of RGB data as string"
+        try:
+            return self._data_cache[self]
+        except KeyError:
+            pass
+        
         if self._data is None:
             self._dataA = None
             if sys.platform[0:4] == 'java':
@@ -655,7 +672,14 @@ class ImageReader(object):
                     im = im.convert('RGB')
                     self.mode = 'RGB'
                 self._data = im.tostring()
-        return self._data
+
+        if len(self._data)<128*1024:
+            return self._data
+        
+        retval = self._data
+        self._data_cache[self] = retval
+        self._data = None
+        return retval
 
     def getImageData(self):
         width, height = self.getSize()
@@ -668,6 +692,8 @@ class ImageReader(object):
             if self._image.info.has_key("transparency"):
                 transparency = self._image.info["transparency"] * 3
                 palette = self._image.palette
+                if not palette: # fix: some images do not seem to have a palette at all
+                    return None
                 try:
                     palette = palette.palette
                 except:
