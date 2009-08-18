@@ -22,14 +22,7 @@ import distutils
 from distutils.core import setup, Extension
 from distutils import sysconfig
 
-# from Zope - App.Common.package_home
-def package_home(globals_dict):
-    __name__=globals_dict['__name__']
-    m=sys.modules[__name__]
-    r=os.path.split(m.__path__[0])[0]
-    return r
-
-package_path = pjoin(package_home(distutils.__dict__), 'site-packages', 'reportlab')
+package_path = pjoin(sysconfig.get_python_lib(plat_specific=1), 'reportlab')
 
 def get_version():
     if daily: return 'daily'

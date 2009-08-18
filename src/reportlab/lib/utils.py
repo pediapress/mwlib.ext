@@ -531,6 +531,8 @@ def _isPILImage(im):
 class ImageReader(object):
     "Wraps up either PIL or Java to get data from bitmaps"
     _cache={}
+    _cached_readers = {}
+    
     def __init__(self, fileName):
         if isinstance(fileName,ImageReader):
             self.__dict__ = fileName.__dict__   #borgize
@@ -569,10 +571,17 @@ class ImageReader(object):
                         data=self._cache.setdefault(md5(data).digest(),data)
                     self.fp=getStringIO(data)
                 elif imageReaderFlags==-1 and isinstance(fileName,(str,unicode)):
+                    if self.fileName in self._cached_readers:
+                        self.__dict__ = self._cached_readers[self.fileName].__dict__
+                        self.__class__ = LazyImageReader
+                        return
+                    
                     #try Ralf Schmitt's re-opening technique of avoiding too many open files
                     self.fp.close()
                     del self.fp #will become a property in the next statement
                     self.__class__=LazyImageReader
+                    self._cached_readers[self.fileName] = self
+                    
                 if haveImages:
                     #detect which library we are using and open the image
                     if not self._image:
@@ -668,6 +677,8 @@ class ImageReader(object):
             if self._image.info.has_key("transparency"):
                 transparency = self._image.info["transparency"] * 3
                 palette = self._image.palette
+                if not palette: # fix: some images do not seem to have a palette at all
+                    return None
                 try:
                     palette = palette.palette
                 except:
