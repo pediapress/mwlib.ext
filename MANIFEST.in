@@ -61,7 +61,6 @@ include upstream-src/ez_setup.py
 include upstream-src/setup.cfg
 include upstream-src/setup.py
 include upstream-src/setup_egg.py
-include upstream-src/setup_version.py
 include upstream-src/src/reportlab/MANIFEST.in
 include upstream-src/src/reportlab/__init__.py
 include upstream-src/src/reportlab/fonts/00readme.txt
@@ -144,6 +143,7 @@ include upstream-src/src/reportlab/graphics/widgets/signsandsymbols.py
 include upstream-src/src/reportlab/lib/PyFontify.py
 include upstream-src/src/reportlab/lib/__init__.py
 include upstream-src/src/reportlab/lib/abag.py
+include upstream-src/src/reportlab/lib/arciv.py
 include upstream-src/src/reportlab/lib/attrmap.py
 include upstream-src/src/reportlab/lib/boxstuff.py
 include upstream-src/src/reportlab/lib/codecharts.py
@@ -167,7 +167,6 @@ include upstream-src/src/reportlab/lib/set_ops.py
 include upstream-src/src/reportlab/lib/styles.py
 include upstream-src/src/reportlab/lib/testutils.py
 include upstream-src/src/reportlab/lib/textsplit.py
-include upstream-src/src/reportlab/lib/tocindex.py
 include upstream-src/src/reportlab/lib/units.py
 include upstream-src/src/reportlab/lib/utils.py
 include upstream-src/src/reportlab/lib/validators.py
@@ -358,6 +357,7 @@ include upstream-src/tests/alpha_test.png
 include upstream-src/tests/pythonpowered.gif
 include upstream-src/tests/runAll.py
 include upstream-src/tests/solid_red_alpha.png
+include upstream-src/tests/tall_red.png
 include upstream-src/tests/test_charts_textlabels.py
 include upstream-src/tests/test_crypto_algorithms.py
 include upstream-src/tests/test_docs_build.py
@@ -396,6 +396,7 @@ include upstream-src/tests/test_pdfgen_pycanvas.py
 include upstream-src/tests/test_platypus_breaking.py
 include upstream-src/tests/test_platypus_general.py
 include upstream-src/tests/test_platypus_indents.py
+include upstream-src/tests/test_platypus_index.py
 include upstream-src/tests/test_platypus_leftright.py
 include upstream-src/tests/test_platypus_paragraphs.py
 include upstream-src/tests/test_platypus_paraparser.py
