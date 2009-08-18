@@ -14,7 +14,6 @@ import sys
 import re
 from string import join, split, strip, atoi, replace, upper, digits
 import tempfile
-from types import *
 from math import sin, cos, tan, pi, ceil
 try:
     from hashlib import md5
@@ -26,13 +25,12 @@ from reportlab.pdfbase import pdfutils
 from reportlab.pdfbase import pdfdoc
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfgen  import pdfgeom, pathobject, textobject
+from reportlab.lib.colors import black
 from reportlab.lib.utils import import_zlib, ImageReader, fp_str, _digester
-from reportlab.lib.boxstuff import aspectRatioFix, anchorAdjustXY
+from reportlab.lib.boxstuff import aspectRatioFix
 
 digitPat = re.compile('\d')  #used in decimal alignment
-
 zlib = import_zlib()
-_SeqTypes=(TupleType,ListType)
 
 # Robert Kern
 # Constants for closing paths.
@@ -129,7 +127,8 @@ class Canvas(textobject._PDFColorSetter):
                  pageCompression=None,
                  invariant = None,
                  verbosity=0,
-                 encrypt=None):
+                 encrypt=None,
+                 cropMarks=None):
         """Create a canvas of a given size. etc.
 
         You may pass a file-like object to filename as an alternative to
@@ -137,7 +136,10 @@ class Canvas(textobject._PDFColorSetter):
         For more information about the encrypt parameter refer to the setEncrypt method.
         
         Most of the attributes are private - we will use set/get methods
-        as the preferred interface.  Default page size is A4."""
+        as the preferred interface.  Default page size is A4.
+        cropMarks may be True/False or an object with parameters borderWidth, markColor, markWidth
+        and markLength
+        """
         if pagesize is None: pagesize = rl_config.defaultPageSize
         if invariant is None: invariant = rl_config.invariant
         self._filename = filename
@@ -151,6 +153,7 @@ class Canvas(textobject._PDFColorSetter):
 
         #this is called each time a page is output if non-null
         self._onPage = None
+        self._cropMarks = cropMarks
 
         self._pagesize = pagesize
         self._pageRotation = 0
@@ -193,12 +196,10 @@ class Canvas(textobject._PDFColorSetter):
         '''
         if encrypt:
             from reportlab.lib import pdfencrypt
-            if isinstance(encrypt, basestring):
+            if isinstance(encrypt, basestring): #encrypt is the password itself
                 if isinstance(encrypt, unicode):
-                    userPass = encrypt.encode('utf-8')
-                else:
-                    userPass = encrypt
-                encrypt = pdfencrypt.StandardEncryption(userPass)
+                    encrypt = encrypt.encode('utf-8')
+                encrypt = pdfencrypt.StandardEncryption(encrypt)    #now it's the encrypt object
                 encrypt.setAllPermissions(1)
             elif not isinstance(encrypt, pdfencrypt.StandardEncryption):
                 raise TypeError('Expected string or instance of reportlab.lib.pdfencrypt.StandardEncryption as encrypt parameter but got %r' % encrypt)
@@ -376,7 +377,7 @@ class Canvas(textobject._PDFColorSetter):
     def setKeywords(self, keywords):
         """write a list of keywords into the PDF file which shows in document properties.
         Either submit a single string or a list/tuple"""
-        if type(keywords) in (TupleType, ListType):
+        if isinstance(keywords,(list,tuple)):
             keywords = ', '.join(keywords)
         self._doc.setKeywords(keywords)
 
@@ -396,16 +397,66 @@ class Canvas(textobject._PDFColorSetter):
         wins."""
         self._doc._catalog.showFullScreen()
 
+    def _getCmShift(self):
+        cM = self._cropMarks
+        if cM:
+            mv = max(1,min(self._pagesize[0],self._pagesize[1]))
+            sf = min(1+1./mv,1.01)
+            bw = max(0,getattr(cM,'borderWidth',36)/sf)
+            return bw
+
     def showPage(self):
         """Close the current page and possibly start on a new page."""
-
         # ensure a space at the end of the stream - Acrobat does
         # not mind, but Ghostscript dislikes 'Qendstream' even if
         # the length marker finishes after 'Q'
-        self._code.append(' ')
+
+        pageWidth = self._pagesize[0]
+        pageHeight = self._pagesize[1]
+        cM = self._cropMarks
+        code = self._code
+        if cM:
+            mv = max(1,min(pageWidth,pageHeight))
+            sf = min(1+1./mv,1.01)
+            bw = max(0,getattr(cM,'borderWidth',36)/sf)
+            if bw:
+                bv = (sf-1)*mv*0.5
+                ml = min(bw,max(0,getattr(cM,'markLength',18)/sf))
+                mw = getattr(cM,'markWidth',0.5)
+                mc = getattr(cM,'markColor',black)
+                mg = bw-ml
+                cx0 = len(code)
+                self.saveState()
+                self.scale(sf,sf)
+                self.translate(bw,bw)
+                opw = pageWidth*sf
+                oph = pageHeight*sf
+                pageWidth = 2*bw + pageWidth*sf
+                pageHeight = 2*bw + pageHeight*sf
+                if ml and mc:
+                    self.saveState()
+                    self.setStrokeColor(mc)
+                    self.setLineWidth(mw)
+                    self.lines([
+                        (bv,0-bw,bv,ml-bw),
+                        (opw-2*bv,0-bw,opw-2*bv,ml-bw),
+                        (bv,oph+mg,bv,oph+bw),
+                        (opw-2*bv,oph+mg,opw-2*bv,oph+bw),
+                        (-bw,bv,ml-bw,bv),
+                        (opw+mg,bv,opw+bw,bv),
+                        (-bw,oph-2*bv,ml-bw,oph-2*bv),
+                        (opw+mg,oph-2*bv,opw+bw,oph-2*bv),
+                        ])
+                    self.restoreState()
+                C = code[cx0:]
+                del code[cx0:]
+                code[0:0] = C
+                self.restoreState()
+
+        code.append(' ')
         page = pdfdoc.PDFPage()
-        page.pagewidth = self._pagesize[0]
-        page.pageheight = self._pagesize[1]
+        page.pagewidth = pageWidth
+        page.pageheight = pageHeight
         page.Rotate = self._pageRotation
         page.hasImages = self._currentPageHasImages
         page.setPageTransition(self._pageTransition)
@@ -413,7 +464,7 @@ class Canvas(textobject._PDFColorSetter):
         if self._pageDuration is not None:
             page.Dur = self._pageDuration
 
-        strm =  self._psCommandsBeforePage + [self._preamble] + self._code + self._psCommandsAfterPage
+        strm =  self._psCommandsBeforePage + [self._preamble] + code + self._psCommandsAfterPage
         page.setStream(strm)
         self._setXObjects(page)
         self._setAnnotations(page)
@@ -424,7 +475,7 @@ class Canvas(textobject._PDFColorSetter):
 
     def _startPage(self):
         #now get ready for the next one
-        self._pageNumber = self._pageNumber+1
+        self._pageNumber += 1
         self._restartAccumulators()
         self.init_graphics_state()
         self.state_stack = []
@@ -580,63 +631,93 @@ class Canvas(textobject._PDFColorSetter):
         #
         ######################################################
 
-    def drawInlineImage(self, image, x,y, width=None,height=None,preserveAspectRatio=False,anchor='sw'):
-        """Draw an Image into the specified rectangle.  If width and
-        height are omitted, they are calculated from the image size.
-        Also allow file names as well as images.  The size in pixels
-        of the image is returned.
-
-        New post version 2.0:  drawImage can center the image in a box you provide.
-        This saves developers from doing lots of math in their code.  You can
-        define a box with x,y,width and height.   If 'preserveAspectRatio'
-        is set, the image will be scaled up or down as needed in proportion to
-        fit entirely within the box.  Unless the aspect ratio perfectly matches
-        the box, this will leave some space.  So, the boxAnchor property defines
-        how the image should be anchored in the box, using imaginary points of
-        the compass.  'sw' for SouthWest is the default, but 'c' for center
-        will center it in the given box.
+    def drawInlineImage(self, image, x,y, width=None,height=None,
+            preserveAspectRatio=False,anchor='c'):
+        """See drawImage, which should normally be used instead... 
+        
+        drawInlineImage behaves like drawImage, but stores the image content
+        within the graphics stream for the page.  This means that the mask
+        parameter for transparency is not available.  It also means that there 
+        is no saving in file size or time if the same image is reused.  
+        
+        In theory it allows images to be displayed slightly faster; however, 
+        we doubt if the difference is noticeable to any human user these days.
+        Only use this if you have studied the PDF specification and know the
+        implications.
         """
+    
         self._currentPageHasImages = 1
         from pdfimages import PDFImage
         img_obj = PDFImage(image, x,y, width, height)
-        img_obj.drawInlineImage(self,anchor=anchor,preserveAspectRatio=preserveAspectRatio)
+        img_obj.drawInlineImage(self,
+            preserveAspectRatio=preserveAspectRatio, 
+            anchor=anchor)
         return (img_obj.width, img_obj.height)
 
-    def drawImage(self, image, x, y, width=None, height=None, mask=None, preserveAspectRatio=False, anchor='sw'):
+    def drawImage(self, image, x, y, width=None, height=None, mask=None, 
+            preserveAspectRatio=False, anchor='c'):
         """Draws the image (ImageReader object or filename) as specified.
 
-        "image" may be an image filename or an ImageReader object.  If width
-        and height are not given, the "natural" width and height in pixels
-        is used at a scale of 1 point to 1 pixel.
 
-        The mask parameter takes 6 numbers and defines the range of
-        RGB values which will be masked out or treated as transparent.
-        For example with [0,2,40,42,136,139], it will mask out any
-        pixels with a Red value from 0-2, Green from 40-42 and
-        Blue from 136-139  (on a scale of 0-255)
+        "image" may be an image filename or an ImageReader object. 
+ 
+        x and y define the lower left corner of the image you wish to
+        draw (or of its bounding box, if using preserveAspectRation below).
+         
+        If width and height are not given, the width and height of the
+        image in pixels is used at a scale of 1 point to 1 pixel.  
+       
+        If width and height are given, the image will be stretched to fill 
+        the given rectangle bounded by (x, y, x+width, y-height).  
+        
+        If you supply negative widths and/or heights, it inverts them and adjusts
+        x and y accordingly.
 
-        The method returns the width and height of the underlying image since
-        this is often useful for layout algorithms.
+        The method returns the width and height of the underlying image, since
+        this is often useful for layout algorithms and saves you work if you have
+        not specified them yourself.
 
-        New post version 2.0:  drawImage can center the image in a box you provide.
-        This saves developers from doing lots of math in their code.  You can
-        define a box with x,y,width and height.   If 'preserveAspectRatio'
-        is set, the image will be scaled up or down as needed in proportion to
-        fit entirely within the box.  Unless the aspect ratio perfectly matches
-        the box, this will leave some space.  So, the boxAnchor property defines
-        how the image should be anchored in the box, using imaginary points of
-        the compass.  'sw' for SouthWest is the default, but 'c' for center
-        will center it in the given box.
+        The mask parameter supports transparent backgrounds. It takes 6 numbers
+        and defines the range of RGB values which will be masked out or treated
+        as transparent.  For example with [0,2,40,42,136,139], it will mask out
+        any pixels with a Red value from 0-2, Green from 40-42 and
+        Blue from 136-139  (on a scale of 0-255).
+
+        New post version 2.0:  drawImage can center an image in a box you
+        provide, while preserving its aspect ratio.  For example, you might
+        have a fixed square box in your design, and a collection of photos
+        which might be landscape or portrait that you want to appear within 
+        the box.  If preserveAspectRatio is true, your image will appear within
+        the box specified.
+
+        
+        If preserveAspectRatio is True, the anchor property can be used to
+        specify how images should fit into the given box.  It should 
+        be set to one of the following values, taken from the points of
+        the compass (plus 'c' for 'centre'):
+
+                nw   n   ne
+                w    c    e
+                sw   s   se
+
+        The default value is 'c' for 'centre'.  Thus, if you want your
+        bitmaps to always be centred and appear at the top of the given box,
+        set anchor='n'.      There are good examples of this in the output
+        of test_pdfgen_general.py
+       
+
 
         Unlike drawInlineImage, this creates 'external images' which
         are only stored once in the PDF file but can be drawn many times.
         If you give it the same filename twice, even at different locations
-        and sizes, it will reuse the first occurrence.  If you use ImageReader
-        objects, it tests whether the image content has changed before deciding
+        and sizes, it will reuse the first occurrence, resulting in a saving
+        in file size and generation time.  If you use ImageReader objects,
+        it tests whether the image content has changed before deciding
         whether to reuse it.
 
         In general you should use drawImage in preference to drawInlineImage
-        unless you have read the PDF Spec and understand the tradeoffs."""
+        unless you have read the PDF Spec and understand the tradeoffs."""        
+       
         self._currentPageHasImages = 1
 
         # first, generate a unique name/signature for the image.  If ANYTHING
@@ -677,7 +758,6 @@ class Canvas(textobject._PDFColorSetter):
 
         # ensure we have a size, as PDF will make it 1x1 pixel otherwise!
         x,y,width,height,scaled = aspectRatioFix(preserveAspectRatio,anchor,x,y,width,height,imgObj.width,imgObj.height)
-        x,y = anchorAdjustXY(anchor,x,y,width,height)
 
         # scale and draw
         self.saveState()
@@ -806,6 +886,9 @@ class Canvas(textobject._PDFColorSetter):
             xmin, ymin = min(xs), min(ys)
             xmax, ymax = max(xs), max(ys)
             rect = xmin, ymin, xmax, ymax
+        bw = self._getCmShift()
+        if bw:
+            rect = rect[0]+bw,rect[1]+bw,rect[2]+bw,rect[3]+bw
         return rect
 
     def freeTextAnnotation(self, contents, DA, Rect=None, addtopage=1, name=None, relative=0, **kw):
@@ -1254,7 +1337,9 @@ class Canvas(textobject._PDFColorSetter):
         self.drawText(t)
 
     def drawCentredString(self, x, y, text):
-        """Draws a string centred on the x coordinate."""
+        """Draws a string centred on the x coordinate. 
+        
+        We're British, dammit, and proud of our spelling!"""
         width = self.stringWidth(text, self._fontname, self._fontsize)
         t = self.beginText(x - 0.5*width, y)
         t.textLine(text)
@@ -1386,9 +1471,9 @@ class Canvas(textobject._PDFColorSetter):
 
     def setDash(self, array=[], phase=0):
         """Two notations.  pass two numbers, or an array and phase"""
-        if type(array) == IntType or type(array) == FloatType:
+        if isinstance(array,(int,float)):
             self._code.append('[%s %s] 0 d' % (array, phase))
-        elif type(array) == ListType or type(array) == TupleType:
+        elif isinstance(array,(tuple,list)):
             assert phase >= 0, "phase is a length in user space"
             textarray = ' '.join(map(str, array))
             self._code.append('[%s] %s d' % (textarray, phase))

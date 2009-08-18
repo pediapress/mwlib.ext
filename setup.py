@@ -16,6 +16,10 @@ if not pkgDir:
     pkgDir=os.getcwd()
 elif not os.path.isabs(pkgDir):
     pkgDir=os.path.abspath(pkgDir)
+try:
+    os.chdir(pkgDir)
+except:
+    print '!!!!! warning could not change directory to %r' % pkgDir
 daily=os.environ.get('RL_EXE_DAILY','')
 
 import distutils
@@ -27,10 +31,12 @@ package_path = pjoin(sysconfig.get_python_lib(plat_specific=1), 'reportlab')
 def get_version():
     if daily: return 'daily'
     #determine Version
-    if __name__=='__main__':
-        HERE=os.path.dirname(sys.argv[0])
-    else:
-        HERE=os.path.dirname(__file__)
+    HERE = pkgDir
+    if os.getcwd()!=HERE:
+        if __name__=='__main__':
+            HERE=os.path.dirname(sys.argv[0])
+        else:
+            HERE=os.path.dirname(__file__)
 
     #first try source
     FN = pjoin(HERE,'src','reportlab','__init__')
@@ -98,6 +104,9 @@ class inc_lib_dirs:
                 aDir(I, "/opt/local/include")
             aDir(I, "/usr/local/include")
             aDir(L, "/usr/local/lib")
+            aDir(I, "/usr/include")
+            aDir(L, "/usr/lib")
+            aDir(I, "/usr/include/freetype2")
             prefix = sysconfig.get_config_var("prefix")
             if prefix:
                 aDir(L, pjoin(prefix, "lib"))
@@ -269,7 +278,7 @@ def main():
         LIBS = []       #assume empty libraries list
 
         if platform=='win32':
-            FT_LIB=config('FREETYPE','lib',r'C:\Python\devel\freetype-2.1.5\objs\freetype214.lib')
+            FT_LIB=config('FREETYPE','lib',r'C:\devel\freetype-2.1.5\objs\freetype214.lib')
             if FT_LIB:
                 FT_INC_DIR=config('FREETYPE','incdir')
                 FT_MACROS = [('RENDERPM_FT',None)]

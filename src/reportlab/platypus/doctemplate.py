@@ -35,6 +35,10 @@ from reportlab.platypus.frames import Frame
 from reportlab.rl_config import defaultPageSize, verbose
 import reportlab.lib.sequencer
 from reportlab.pdfgen import canvas
+try:
+    set
+except NameError:
+    from sets import Set as set
 
 from types import *
 import sys
@@ -43,6 +47,20 @@ logger = logging.getLogger("reportlab.platypus")
 
 class LayoutError(Exception):
     pass
+
+def _fSizeString(f):
+    w=getattr(f,'width',None)
+    if w is None:
+        w=getattr(f,'_width',None)
+
+    h=getattr(f,'height',None)
+    if h is None:
+        h=getattr(f,'_height',None)
+    if w is not None or h is not None:
+        if w is None: w='???'
+        if h is None: h='???'
+        return '(%s x %s)' % (w,h)
+    return ''
 
 def _doNothing(canvas, doc):
     "Dummy callback for onPage"
@@ -117,9 +135,9 @@ class ActionFlowable(Flowable):
                 raise NotImplementedError, "Can't handle ActionFlowable(%s)" % action
             else:
                 raise
-        except "bogus":
-            t, v, unused = sys.exc_info()
-            raise t, "%s\n   handle_%s args=%s"%(v,action,args)
+        except:
+            t, v, tb = sys.exc_info()
+            raise t, "%s\n   handle_%s args=%s"%(v,action,args), tb
 
     def __call__(self):
         return self
@@ -147,7 +165,7 @@ class CurrentFrameFlowable(LCActionFlowable):
         ActionFlowable.__init__(self,('currentFrame',ix,resume))
 
 class NullActionFlowable(ActionFlowable):
-    def apply(self):
+    def apply(self,doc):
         pass
 
 class _FrameBreak(LCActionFlowable):
@@ -341,7 +359,9 @@ class BaseDocTemplate:
                     '_pageBreakQuick':1,
                     'rotation':0,
                     '_debug':0,
-                    'encrypt': None}
+                    'encrypt': None,
+                    'cropMarks': None,
+                    }
     _invalidInitArgs = ()
     _firstPageTemplateIndex = 0
 
@@ -545,7 +565,7 @@ class BaseDocTemplate:
                         c.append(t)
                         found = 1
                 if not found:
-                    raise ValueError("Cannot find page template called %s" % templateName)
+                    raise ValueError("Cannot find page template called %s" % ptn)
             if not c:
                 raise ValueError("No valid page templates in cycle")
             elif c._restart>len(c):
@@ -685,7 +705,9 @@ class BaseDocTemplate:
                         flowables.insert(i,f)   # put split flowables back on the list
                 else:
                     if hasattr(f,'_postponed'):
-                        ident = "Flowable %s too large on page %d" % (self._fIdent(f,60,frame), self.page)
+                        ident = "Flowable %s%s too large on page %d in frame %r%s of template %r" % \
+                                (self._fIdent(f,60,frame),_fSizeString(f),self.page, self.frame.id,
+                                        self.frame._aSpaceString(), self.pageTemplate.id)
                         #leave to keep apart from the raise
                         raise LayoutError(ident)
                     # this ought to be cleared when they are finally drawn!
@@ -720,6 +742,7 @@ class BaseDocTemplate:
  
         getattr(self.canv,'setEncrypt',lambda x: None)(self.encrypt)
 
+        self.canv._cropMarks = self.cropMarks
         self.canv.setAuthor(self.author)
         self.canv.setTitle(self.title)
         self.canv.setSubject(self.subject)
@@ -821,9 +844,9 @@ class BaseDocTemplate:
         self._pageRefs[label] = self.page
 
     def multiBuild(self, story,
-                   filename=None,
-                   canvasmaker=canvas.Canvas,
-                   maxPasses = 10):
+                   maxPasses = 10,
+                   **buildKwds
+                   ):
         """Makes multiple passes until all indexing flowables
         are happy."""
         self._indexingFlowables = []
@@ -848,7 +871,7 @@ class BaseDocTemplate:
 
             # work with a copy of the story, since it is consumed
             tempStory = story[:]
-            self.build(tempStory, filename, canvasmaker)
+            self.build(tempStory, **buildKwds)
             #self.notify('debug',None)
 
             for fl in self._indexingFlowables:

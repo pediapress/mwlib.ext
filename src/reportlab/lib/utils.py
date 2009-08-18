@@ -4,21 +4,16 @@
 __version__=''' $Id$ '''
 __doc__='''Gazillions of miscellaneous internal utility functions'''
 
-import string, os, sys, imp, time
+import os, sys, imp, time
 try:
     from hashlib import md5
 except:
     from md5 import md5
 from reportlab.lib.logger import warnOnce
-from types import *
 from rltempfile import get_rl_tempfile, get_rl_tempdir, _rl_getuid
-SeqTypes = (ListType,TupleType)
-if sys.hexversion<0x2020000:
-    def isSeqType(v):
-        return type(v) in SeqTypes
-else:
-    def isSeqType(v):
-        return isinstance(v,(tuple,list))
+
+def isSeqType(v,_st=(tuple,list)):
+    return isinstance(v,_st)
 
 if sys.hexversion<0x2030000:
     True = 1
@@ -131,7 +126,7 @@ if os.name == 'mac':
         try:
             if creatorcode is None or filetype is None and ext is not None:
                 try:
-                    creatorcode, filetype = _KNOWN_MAC_EXT[string.upper(ext)]
+                    creatorcode, filetype = _KNOWN_MAC_EXT[ext.upper()]
                 except:
                     return
             macfs.FSSpec(filename).SetCreatorType(creatorcode,filetype)
@@ -234,6 +229,7 @@ except ImportError:
     _tz_re = re.compile('0+$')
     del re
     def fp_str(*a):
+        '''convert separate arguments (or single sequence arg) into space separated numeric strings'''
         if len(a)==1 and isSeqType(a[0]): a = a[0]
         s = []
         A = s.append
@@ -251,13 +247,13 @@ except ImportError:
                         print i, n
                         raise
                 A((n[0]!='0' or len(n)==1) and n or n[1:])
-        return string.join(s)
+        return ' '.join(s)
 
 #hack test for comma users
 if ',' in fp_str(0.25):
     _FP_STR = fp_str
     def fp_str(*a):
-        return string.replace(apply(_FP_STR,a),',','.')
+        return _FP_STR(*a).replace(',','.')
 
 def recursiveImport(modulename, baseDir=None, noCWD=0, debug=0):
     """Dynamically imports possible packagized module, or raises ImportError"""
@@ -307,11 +303,11 @@ def recursiveGetAttr(obj, name):
 def recursiveSetAttr(obj, name, value):
     "Can call down into e.g. object1.object2[4].attr = value"
     #get the thing above last.
-    tokens = string.split(name, '.')
+    tokens = name.split('.')
     if len(tokens) == 1:
         setattr(obj, name, value)
     else:
-        most = string.join(tokens[:-1], '.')
+        most = '.'.join(tokens[:-1])
         last = tokens[-1]
         parent = recursiveGetAttr(obj, most)
         setattr(parent, last, value)
@@ -371,19 +367,19 @@ def getArgvDict(**kw):
         if func:
             v = func(av)
         else:
-            t = type(v)
-            if t is StringType:
+            if isinstance(v,basestring):
+                if isinstance(v,unicode): v = v.encode('utf8')
                 v = av
-            elif t is FloatType:
+            elif isinstance(v,float):
                 v = float(av)
-            elif t is IntType:
+            elif isinstance(v,int):
                 v = int(av)
-            elif t is ListType:
+            elif isinstance(v,list):
                 v = list(eval(av))
-            elif t is TupleType:
+            elif isinstance(v,tuple):
                 v = tuple(eval(av))
             else:
-                raise TypeError, "Can't convert string '%s' to %s" % (av,str(t))
+                raise TypeError("Can't convert string %r to %s" % (av,type(v)))
         return v
 
     A = sys.argv[1:]
@@ -396,7 +392,7 @@ def getArgvDict(**kw):
         handled = 0
         ke = k+'='
         for a in A:
-            if string.find(a,ke)==0:
+            if a.find(ke)==0:
                 av = a[len(ke):]
                 A.remove(a)
                 R[k] = handleValue(v,av,func)
@@ -420,7 +416,7 @@ def _className(self):
     '''Return a shortened class name'''
     try:
         name = self.__class__.__name__
-        i=string.rfind(name,'.')
+        i=name.rfind('.')
         if i>=0: return name[i+1:]
         return name
     except AttributeError:
@@ -703,13 +699,13 @@ class ImageReader(object):
                 return None
 
 class LazyImageReader(ImageReader): 
-    @property 
     def fp(self): 
         return open_for_read(self.fileName, 'b') 
+    fp=property(fp) 
 
-    @property 
     def _image(self):
         return self._read_image(self.fp)
+    _image=property(_image) 
 
 def getImageData(imageFileName):
     "Get width, height and RGB pixels from image file.  Wraps Java/PIL"
@@ -894,6 +890,19 @@ class DebugMemo:
             pprint.pprint(v,self.stdout)
             self._finish(k)
 
+    def _show_extensions(self):
+        for mn in ('_rl_accel','_renderPM','sgmlop','pyRXP','pyRXPU','_imaging','Image'):
+            try:
+                A = [mn].append
+                m = recursiveImport(mn,sys.path[:],1)
+                A(m.__file__)
+                for vn in ('__version__','VERSION','_version','version'):
+                    if hasattr(m,vn):
+                        A('%s=%r' % (vn,getattr(m,vn)))
+            except:
+                A('not found')
+            self._writeln(' '+' '.join(A.__self__))
+
     specials = {'__module_versions': _show_module_versions,
                 '__payload': _show_payload,
                 '__traceback': _show_lines,
@@ -905,7 +914,8 @@ class DebugMemo:
         for k in K:
             if k not in self.specials.keys(): self._writeln('%-15s = %s' % (k,self.store[k]))
         for k in K:
-            if k in self.specials.keys(): apply(self.specials[k],(self,k,self.store[k]))
+            if k in self.specials.keys(): self.specials[k](self,k,self.store[k])
+        self._show_extensions()
 
     def payload(self,name):
         return self.store['__payload'][name]
@@ -967,10 +977,10 @@ def _simpleSplit(txt,mW,SW):
             O.append(t)
             w = w + ws + lt
         else:
-            L.append(string.join(O,' '))
+            L.append(' '.join(O))
             O = [t]
             w = lt
-    if O!=[]: L.append(string.join(O,' '))
+    if O!=[]: L.append(' '.join(O))
     return L
 
 def simpleSplit(text,fontName,fontSize,maxWidth):
@@ -1032,3 +1042,49 @@ def prev_this_next(items):
     except StopIteration:
         pass
     return itertools.izip(prev, this, next)
+
+def commasplit(s):
+    '''
+    Splits the string s at every unescaped comma and returns the result as a list.
+    To escape a comma, double it. Individual items are stripped.
+    To avoid the ambiguity of 3 successive commas to denote a comma at the beginning
+    or end of an item, add a space between the item seperator and the escaped comma.
+    
+    >>> commasplit('a,b,c')
+    ['a', 'b', 'c']
+    >>> commasplit('a,, , b , c    ')
+    ['a,', 'b', 'c']
+    >>> commasplit('a, ,,b, c')
+    ['a', ',b', 'c']
+    '''
+    n = len(s)-1
+    s += ' '
+    i = 0
+    r=['']
+    while i<=n:
+        if s[i]==',':
+            if s[i+1]==',':
+                r[-1]+=','
+                i += 1
+            else:
+                r[-1] = r[-1].strip()
+                if i!=n: r.append('')
+        else:
+            r[-1] += s[i]
+        i+=1
+    r[-1] = r[-1].strip()
+    return r
+    
+def commajoin(l):
+    '''
+    Inverse of commasplit, except that whitespace around items is not conserved.
+    Adds more whitespace than needed for simplicity and performance.
+    
+    >>> commasplit(commajoin(['a', 'b', 'c']))
+    ['a', 'b', 'c']
+    >>> commasplit((commajoin(['a,', ' b ', 'c']))
+    ['a,', 'b', 'c']
+    >>> commasplit((commajoin(['a ', ',b', 'c']))
+    ['a', ',b', 'c']    
+    '''
+    return ','.join([ ' ' + i.replace(',', ',,') + ' ' for i in l ])

@@ -1,13 +1,47 @@
 This is a summary of changes made to the reportlab source code for each release.
 Please refer to subversion backlogs (using the release dates) for more details
 or for releases which we have not provide a higher level changes list for.
-
-e.g. to retrieve the changes made between release 1.19 and release 1.20, type:
+E.g. to retrieve the changes made between release 1.19 and release 1.20, type:
 
   svn log -r {2004-11-25T18:00}:{2004-01-21T18:00}
 
-The contributors list is in no order and apologies to those accidentally not
+The contributors lists are in no order and apologies to those accidentally not
 mentioned. If we missed you, please let us know!
+
+#################################################################################
+#################### RELEASE 2.3  at 18:00 GMT  04/Feb/2009     #################
+#################################################################################
+
+PDF
+
+  Encryption support (see encrypt parameter on Canvas and BaseDocTemplate constructor)
+
+Platypus
+
+  TableOfContents - Creates clickable tables of contents
+  Variable border padding for paragraphs (using the borderPadding style attribute)
+  New programming Flowable, docAssert, used to assert expressions on wrap time.
+
+Bug fixes
+
+   Fixed old documentation and installation issues
+   610 - Fixed Image anchoring code to match documentation
+   704 - renderSVG groups problem
+   706 - rl_codecs.py now compatible with WordAxe
+   and others...
+
+Contributors 
+------------
+
+Yoann Roman
+Dinu Gherman
+Dirk Holtwick
+Marcel Tromp
+Henning von Bargen
+Paul Barrass
+Adrian Klaver
+Hans Brand
+Ian Stevens
 
 #################################################################################
 #################### RELEASE 2.2  at 18:00 GMT  10/Sep/2008     #################

@@ -1,6 +1,5 @@
-#Copyright ReportLab Europe Ltd. 2000-2004
+#Copyright ReportLab Europe Ltd. 2000-2009
 #see license.txt for license details
-#history http://www.reportlab.co.uk/cgi-bin/viewcvs.cgi/public/reportlab/trunk/reportlab/pdfbase/ttfonts.py
 __version__ = '$Id$'
 __doc__="""TrueType font support
 
@@ -53,9 +52,8 @@ Canvas and TextObject have special support for dynamic fonts.
 """
 
 import string
-from types import StringType, UnicodeType
 from struct import pack, unpack
-from cStringIO import StringIO
+from reportlab.lib.utils import getStringIO
 from reportlab.pdfbase import pdfmetrics, pdfdoc
 
 class TTFError(pdfdoc.PDFError):
@@ -258,13 +256,13 @@ class TTFontParser:
             raise TTFError('Not a TrueType font: version=0x%8.8X' % version)
         return version==self.ttfVersions[-1]
 
-    def readFile(self,file):
-        if type(file) is StringType:
-            self.filename, file = TTFOpenFile(file)
-        else:
+    def readFile(self,f):
+        if hasattr(f,'read'):
             self.filename = '(ttf)'
+        else:
+            self.filename, f = TTFOpenFile(f)
 
-        self._ttf_data = file.read()
+        self._ttf_data = f.read()
         self._pos = 0
 
     def checksumTables(self):
@@ -357,7 +355,8 @@ class TTFontMaker:
 
     def makeStream(self):
         "Finishes the generation and returns the TTF file as a string"
-        stm = StringIO()
+        stm = getStringIO()
+        write = stm.write
 
         numTables = len(self.tables)
         searchRange = 1
@@ -369,7 +368,7 @@ class TTFontMaker:
         rangeShift = numTables * 16 - searchRange
 
         # Header
-        stm.write(pack(">lHHHH", 0x00010000, numTables, searchRange,
+        write(pack(">lHHHH", 0x00010000, numTables, searchRange,
                                  entrySelector, rangeShift))
 
         # Table directory
@@ -380,20 +379,20 @@ class TTFontMaker:
             if tag == 'head':
                 head_start = offset
             checksum = calcChecksum(data)
-            stm.write(tag)
-            stm.write(pack(">LLL", checksum, offset, len(data)))
+            write(tag)
+            write(pack(">LLL", checksum, offset, len(data)))
             paddedLength = (len(data)+3)&~3
             offset = offset + paddedLength
 
         # Table data
         for tag, data in tables:
-            data = data + "\0\0\0"
-            stm.write(data[:len(data)&~3])
+            data += "\0\0\0"
+            write(data[:len(data)&~3])
 
         checksum = calcChecksum(stm.getvalue())
         checksum = add32(0xB1B0AFBAL, -checksum)
         stm.seek(head_start + 8)
-        stm.write(pack('>L', checksum))
+        write(pack('>L', checksum))
 
         return stm.getvalue()
 
@@ -998,7 +997,7 @@ class TTFont:
 
     def _py_stringWidth(self, text, size, encoding='utf-8'):
         "Calculate text width"
-        if type(text) is not UnicodeType:
+        if not isinstance(text,unicode):
             text = unicode(text, encoding or 'utf-8')   # encoding defaults to utf-8
         g = self.face.charWidths.get
         dw = self.face.defaultWidth
@@ -1028,7 +1027,7 @@ class TTFont:
         curSet = -1
         cur = []
         results = []
-        if type(text) is not UnicodeType:
+        if not isinstance(text,unicode):
             text = unicode(text, encoding or 'utf-8')   # encoding defaults to utf-8
         assignments = state.assignments
         subsets = state.subsets
