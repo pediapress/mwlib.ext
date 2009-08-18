@@ -14,7 +14,7 @@ from reportlab.pdfbase import pdfutils
 from reportlab.pdfbase import pdfdoc
 from reportlab.lib.utils import fp_str, getStringIO
 from reportlab.lib.utils import import_zlib, haveImages
-from reportlab.lib.boxstuff import aspectRatioFix, anchorAdjustXY
+from reportlab.lib.boxstuff import aspectRatioFix
 
 
 class PDFImage:
@@ -95,17 +95,26 @@ class PDFImage:
         self.source = 'PIL'
         zlib = import_zlib()
         if not zlib: return
-        myimage = image.convert('RGB')
+
+        # Use the colorSpace in the image
+        if image.mode == 'CMYK':
+            myimage = image
+            colorSpace = 'DeviceCMYK'
+            bpp = 4
+        else:
+            myimage = image.convert('RGB')
+            colorSpace = 'RGB'
+            bpp = 3
         imgwidth, imgheight = myimage.size
 
         # this describes what is in the image itself
         # *NB* according to the spec you can only use the short form in inline images
         #imagedata=['BI /Width %d /Height /BitsPerComponent 8 /ColorSpace /%s /Filter [/Filter [ /ASCII85Decode /FlateDecode] ID]' % (imgwidth, imgheight,'RGB')]
-        imagedata=['BI /W %d /H %d /BPC 8 /CS /RGB /F [/A85 /Fl] ID' % (imgwidth, imgheight)]
+        imagedata=['BI /W %d /H %d /BPC 8 /CS /%s /F [/A85 /Fl] ID' % (imgwidth, imgheight,colorSpace)]
 
         #use a flate filter and Ascii Base 85 to compress
         raw = myimage.tostring()
-        assert len(raw) == imgwidth*imgheight*3, "Wrong amount of data for image"
+        assert len(raw) == imgwidth*imgheight*bpp, "Wrong amount of data for image"
         compressed = zlib.compress(raw)   #this bit is very fast...
         encoded = pdfutils._AsciiBase85Encode(compressed) #...sadly this may not be
         #append in blocks of 60 characters
@@ -149,7 +158,7 @@ class PDFImage:
         self.width = self.width or imgwidth
         self.height = self.height or imgheight
 
-    def drawInlineImage(self, canvas, preserveAspectRatio=False,anchor='sw'): #, image, x,y, width=None,height=None):
+    def drawInlineImage(self, canvas, preserveAspectRatio=False,anchor='sw'):
         """Draw an Image into the specified rectangle.  If width and
         height are omitted, they are calculated from the image size.
         Also allow file names as well as images.  This allows a
@@ -158,7 +167,6 @@ class PDFImage:
         height = self.height
         if width<1e-6 or height<1e-6: return False
         x,y,self.width,self.height, scaled = aspectRatioFix(preserveAspectRatio,anchor,self.x,self.y,width,height,self.imgwidth,self.imgheight)
-        x,y = anchorAdjustXY(anchor,x,y,self.width,self.height)
         # this says where and how big to draw it
         if not canvas.bottomup: y = y+height
         canvas._code.append('q %s 0 0 %s cm' % (fp_str(self.width), fp_str(self.height, x, y)))

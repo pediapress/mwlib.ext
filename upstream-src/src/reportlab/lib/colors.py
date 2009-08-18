@@ -14,9 +14,7 @@ These can be constructed from several popular formats.  We also include
 - various conversion and construction functions
 '''
 import string, math
-from types import StringType, ListType, TupleType
 from reportlab.lib.utils import fp_str
-_SeqTypes = (ListType,TupleType)
 
 class Color:
     """This class is used to represent color.  Components red, green, blue
@@ -50,6 +48,13 @@ class Color:
 
     def hexval(self):
         return '0x%02x%02x%02x' % self.bitmap_rgb()
+
+    def clone(self,**kwds):
+        '''copy then change values in kwds'''
+        c = self.__class__()
+        c.__dict__ = self.__dict__.copy()
+        c.__dict__.update(kwds)
+        return c
 
 class CMYKColor(Color):
     """This represents colors using the CMYK (cyan, magenta, yellow, black)
@@ -209,7 +214,7 @@ def HexColor(val, htmlOnly=False):
 
     """ #" for emacs
 
-    if type(val) == StringType:
+    if isinstance(val,basestring):
         b = 10
         if val[:1] == '#':
             val = val[1:]
@@ -339,6 +344,7 @@ darkblue =  HexColor(0x00008B)
 darkcyan =  HexColor(0x008B8B)
 darkgoldenrod =     HexColor(0xB8860B)
 darkgray =  HexColor(0xA9A9A9)
+darkgrey =  darkgray
 darkgreen =     HexColor(0x006400)
 darkkhaki =     HexColor(0xBDB76B)
 darkmagenta =   HexColor(0x8B008B)
@@ -350,11 +356,13 @@ darksalmon =    HexColor(0xE9967A)
 darkseagreen =  HexColor(0x8FBC8B)
 darkslateblue =     HexColor(0x483D8B)
 darkslategray =     HexColor(0x2F4F4F)
+darkslategrey = darkslategray
 darkturquoise =     HexColor(0x00CED1)
 darkviolet =    HexColor(0x9400D3)
 deeppink =  HexColor(0xFF1493)
 deepskyblue =   HexColor(0x00BFFF)
 dimgray =   HexColor(0x696969)
+dimgrey = dimgray
 dodgerblue =    HexColor(0x1E90FF)
 firebrick =     HexColor(0xB22222)
 floralwhite =   HexColor(0xFFFAF0)
@@ -389,6 +397,7 @@ lightsalmon =   HexColor(0xFFA07A)
 lightseagreen =     HexColor(0x20B2AA)
 lightskyblue =  HexColor(0x87CEFA)
 lightslategray =    HexColor(0x778899)
+lightslategrey = lightslategray
 lightsteelblue =    HexColor(0xB0C4DE)
 lightyellow =   HexColor(0xFFFFE0)
 lime =  HexColor(0x00FF00)
@@ -441,6 +450,7 @@ silver =    HexColor(0xC0C0C0)
 skyblue =   HexColor(0x87CEEB)
 slateblue =     HexColor(0x6A5ACD)
 slategray =     HexColor(0x708090)
+slategrey = slategray
 snow =  HexColor(0xFFFAFA)
 springgreen =   HexColor(0x00FF7F)
 steelblue =     HexColor(0x4682B4)
@@ -529,12 +539,11 @@ def describe(aColor,mode=0):
 def toColor(arg,default=None):
     '''try to map an arbitrary arg to a color instance'''
     if isinstance(arg,Color): return arg
-    tArg = type(arg)
-    if tArg in _SeqTypes:
+    if isinstance(arg,(tuple,list)):
         assert 3<=len(arg)<=4, 'Can only convert 3 and 4 sequences to color'
         assert 0<=min(arg) and max(arg)<=1
         return len(arg)==3 and Color(arg[0],arg[1],arg[2]) or CMYKColor(arg[0],arg[1],arg[2],arg[3])
-    elif tArg == StringType:
+    elif isinstance(arg,basestring):
         C = getAllNamedColors()
         s = string.lower(arg)
         if C.has_key(s): return C[s]
@@ -564,9 +573,9 @@ def setColors(**kw):
     while kw and progress:
         progress = 0
         for k, v in kw.items():
-            if type(v) in (type(()),type([])):
+            if isinstance(v,(tuple,list)):
                 c = map(lambda x,UNDEF=UNDEF: toColor(x,UNDEF),v)
-                if type(v) is type(()): c = tuple(c)
+                if isinstance(v,tuple): c = tuple(c)
                 ok = UNDEF not in c
             else:
                 c = toColor(v,UNDEF)
