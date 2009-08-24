@@ -1,5 +1,4 @@
-syntax: glob
-
 *.pyc
 mwlib.ext.egg-info
-build
+/build
+/dist
