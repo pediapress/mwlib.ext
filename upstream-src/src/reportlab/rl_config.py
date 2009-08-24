@@ -38,7 +38,7 @@ imageReaderFlags=-1                                  #attempt to convert images 
                                                     #if imageReaderFlags&2 then attempt autoclosing of those files
                                                     #if imageReaderFlags&4 then cache data 
                                                     #if imageReaderFlags==-1 then use Ralf Schmitt's re-opening approach
-paraFontSizeHeightOffset=   1                       #if true paragraphs start at height-fontSize
+paraFontSizeHeightOffset=   0                       #if true paragraphs start at height-fontSize
 
 # places to look for T1Font information
 T1SearchPath =  (
