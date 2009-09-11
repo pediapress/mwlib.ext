@@ -356,17 +356,38 @@ class LinePlot(AbstractLineChart):
         g.add(xA)
         g.add(yA)
         if not self.gridFirst:
-            xA.makeGrid(g,parent=self,dim=yA.getGridDims)
-            yA.makeGrid(g,parent=self,dim=xA.getGridDims)
+            xAdgl = getattr(xA,'drawGridLast',False)
+            yAdgl = getattr(yA,'drawGridLast',False)
+            if not xAdgl: xA.makeGrid(g,parent=self,dim=yA.getGridDims)
+            if not yAdgl: yA.makeGrid(g,parent=self,dim=xA.getGridDims)
         annotations = getattr(self,'annotations',[])
         for a in annotations:
             if getattr(a,'beforeLines',None):
                 g.add(a(self,xA.scale,yA.scale))
+        if not self.gridFirst:
+            if xAdgl: xA.makeGrid(g,parent=self,dim=yA.getGridDims)
+            if yAdgl: yA.makeGrid(g,parent=self,dim=xA.getGridDims)
         g.add(self.makeLines())
         for a in annotations:
             if not getattr(a,'beforeLines',None):
                 g.add(a(self,xA.scale,yA.scale))
         return g
+
+    def addCrossHair(self,name,xv,yv,strokeColor=colors.black,strokeWidth=1,beforeLines=True):
+        from reportlab.graphics.shapes import Group, Line
+        annotations = [a for a in getattr(self,'annotations',[]) if getattr(a,'name',None)!=name]
+        def annotation(self,xScale,yScale):
+            x = xScale(xv)
+            y = yScale(yv)
+            g = Group()
+            xA = xScale.im_self #the x axis
+            g.add(Line(xA._x,y,xA._x+xA._length,y,strokeColor=strokeColor,strokeWidth=strokeWidth))
+            yA = yScale.im_self #the y axis
+            g.add(Line(x,yA._y,x,yA._y+yA._length,strokeColor=strokeColor,strokeWidth=strokeWidth))
+            return g
+        annotation.beforeLines = beforeLines
+        annotations.append(annotation)
+        self.annotations = annotations
 
 class LinePlot3D(LinePlot):
     _attrMap = AttrMap(BASE=LinePlot,

@@ -183,6 +183,7 @@ class CategoryAxis(_AxisG):
         gridStrokeDashArray = AttrMapValue(isListOfNumbersOrNone, desc='Dash array used for grid lines.'),
         gridStart = AttrMapValue(isNumberOrNone, desc='Start of grid lines wrt axis origin'),
         gridEnd = AttrMapValue(isNumberOrNone, desc='End of grid lines wrt axis origin'),
+        drawGridLast = AttrMapValue(isBoolean, desc='if true draw gridlines after everything else.'),
         labels = AttrMapValue(None, desc='Handle of the axis labels.'),
         categoryNames = AttrMapValue(isListOfStringsOrNone, desc='List of category names.'),
         joinAxis = AttrMapValue(None, desc='Join both axes if true.'),
@@ -209,6 +210,7 @@ class CategoryAxis(_AxisG):
         self.visibleTicks = 1
         self.visibleLabels = 1
         self.visibleGrid = 0
+        self.drawGridLast = False
 
         self.strokeWidth = 1
         self.strokeColor = STATE_DEFAULTS['strokeColor']
@@ -570,6 +572,7 @@ class ValueAxis(_AxisG):
         gridStrokeDashArray = AttrMapValue(isListOfNumbersOrNone, desc='Dash array used for grid lines.'),
         gridStart = AttrMapValue(isNumberOrNone, desc='Start of grid lines wrt axis origin'),
         gridEnd = AttrMapValue(isNumberOrNone, desc='End of grid lines wrt axis origin'),
+        drawGridLast = AttrMapValue(isBoolean, desc='if true draw gridlines after everything else.'),
         minimumTickSpacing = AttrMapValue(isNumber, desc='Minimum value for distance between ticks.'),
         maximumTicks = AttrMapValue(isNumber, desc='Maximum number of ticks.'),
         labels = AttrMapValue(None, desc='Handle of the axis labels.'),
@@ -590,6 +593,7 @@ class ValueAxis(_AxisG):
         origShiftMin = AttrMapValue(isNumberOrNone, desc='Minimum amount to shift.'),
         origShiftSpecialValue = AttrMapValue(isNumberOrNone, desc='special value for shift'),
         tickAxisMode = AttrMapValue(OneOf('high','low','axis'), desc="Like joinAxisMode, but for the ticks"),
+        reverseDirection = AttrMapValue(isBoolean, desc='If true reverse category direction.'),
         )
 
     def __init__(self,**kw):
@@ -620,6 +624,7 @@ class ValueAxis(_AxisG):
                         gridStrokeDashArray = STATE_DEFAULTS['strokeDashArray'],
                         gridStart = None,
                         gridEnd = None,
+                        drawGridLast = False,
 
                         labels = TypedPropertyCollection(Label),
 
@@ -650,6 +655,7 @@ class ValueAxis(_AxisG):
                         origShiftMin = None,
                         origShiftSpecialValue = None,
                         tickAxisMode = 'axis',
+                        reverseDirection=0,
                         )
         self.labels.angle = 0
 
@@ -987,6 +993,21 @@ class ValueAxis(_AxisG):
 
         return g
 
+    def scale(self, value):
+        """Converts a numeric value to a plotarea position.
+        The chart first configures the axis, then asks it to
+        """
+        assert self._configured, "Axis cannot scale numbers before it is configured"
+        if value is None: value = 0
+
+        #this could be made more efficient by moving the definition of org and sf into the configuration
+        org = (self._x, self._y)[self._dataIndex]
+        sf = self._scaleFactor
+        if self.reverseDirection:
+            sf = -sf
+            org += self._length
+        return org + sf*(value - self._valueMin)
+
 class XValueAxis(_XTicks,ValueAxis):
     "X/value axis"
 
@@ -1054,21 +1075,6 @@ class XValueAxis(_XTicks,ValueAxis):
                 jta(ja, mode=jam)
             elif jam in ('value', 'points'):
                 jta(ja, mode=jam, pos=jap)
-
-    def scale(self, value):
-        """Converts a numeric value to a Y position.
-
-        The chart first configures the axis, then asks it to
-        work out the x value for each point when plotting
-        lines or bars.  You could override this to do
-        logarithmic axes.
-        """
-
-        msg = "Axis cannot scale numbers before it is configured"
-        assert self._configured, msg
-        if value is None:
-            value = 0
-        return self._x + self._scaleFactor * (value - self._valueMin)
 
     def makeAxis(self):
         g = Group()
@@ -1410,22 +1416,6 @@ class YValueAxis(_YTicks,ValueAxis):
                 jta(ja, mode=jam)
             elif jam in ('value', 'points'):
                 jta(ja, mode=jam, pos=jap)
-
-    def scale(self, value):
-        """Converts a numeric value to a Y position.
-
-        The chart first configures the axis, then asks it to
-        work out the x value for each point when plotting
-        lines or bars.  You could override this to do
-        logarithmic axes.
-        """
-
-        msg = "Axis cannot scale numbers before it is configured"
-        assert self._configured, msg
-
-        if value is None:
-            value = 0
-        return self._y + self._scaleFactor * (value - self._valueMin)
 
     def makeAxis(self):
         g = Group()
