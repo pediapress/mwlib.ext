@@ -391,6 +391,7 @@ include upstream-src/tests/test_pdfencryption.py
 include upstream-src/tests/test_pdfgen_callback.py
 include upstream-src/tests/test_pdfgen_general.py
 include upstream-src/tests/test_pdfgen_links.py
+include upstream-src/tests/test_pdfgen_overprint.py
 include upstream-src/tests/test_pdfgen_pagemodes.py
 include upstream-src/tests/test_pdfgen_pycanvas.py
 include upstream-src/tests/test_platypus_breaking.py

@@ -12,7 +12,7 @@ def main():
             pass
     
     remove("make_manifest.py")
-    remove(".hgtags")
+    remove(".gitignore")
     remove("Makefile")
     remove(".hgignore")
     
