@@ -257,7 +257,7 @@ def drawToFile(d, fn, msg="", showBoundary=rl_config._unset_, autoSize=1):
     if too big."""
     d = renderScaledDrawing(d)
     c = Canvas(fn)
-    c.setFont('Times-Roman', 36)
+    c.setFont(rl_config.defaultGraphicsFontName, 36)
     c.drawString(80, 750, msg)
     c.setTitle(msg)
 
@@ -266,7 +266,7 @@ def drawToFile(d, fn, msg="", showBoundary=rl_config._unset_, autoSize=1):
         draw(d, c, 0, 0, showBoundary=showBoundary)
     else:
     #show with a title
-        c.setFont('Times-Roman', 12)
+        c.setFont(rl_config.defaultGraphicsFontName, 12)
         y = 740
         i = 1
         y = y - d.height
