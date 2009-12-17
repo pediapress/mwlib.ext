@@ -3,7 +3,7 @@ include README.txt
 include ez_setup.py
 include mwlib/__init__.py
 include mwlib/_extversion.py
-include mwlib/ext.py
+include mwlib/ext/__init__.py
 include setup.py
 include update.sh
 include upstream-src/CHANGES.txt

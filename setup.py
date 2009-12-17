@@ -21,15 +21,15 @@ def read_long_description():
 ext_modules = []
 ext_modules.append(Extension("mwlib._rl_accel", ['upstream-src/src/rl_addons/rl_accel/_rl_accel.c']))
 
-packages = ["mwlib."+x for x in find_packages("upstream-src/src")]+find_packages(".")
+packages = ["mwlib.ext."+x for x in find_packages("upstream-src/src")]+find_packages(".")
 
 setup(
     name="mwlib.ext",
     version=str(version),
     install_requires=install_requires,    
     packages=packages, 
-    package_dir={"mwlib.reportlab": "upstream-src/src/reportlab",
-                 "mwlib.rl_addons": "upstream-src/src/rl_addons"},
+    package_dir={"mwlib.ext.reportlab": "upstream-src/src/reportlab",
+                 "mwlib.ext.rl_addons": "upstream-src/src/rl_addons"},
     ext_modules=ext_modules,
     namespace_packages=['mwlib'],
     include_package_data = True,

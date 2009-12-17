@@ -15,7 +15,7 @@ def main():
     remove(".gitignore")
     remove("Makefile")
     remove(".hgignore")
-    
+    remove("merge-with-upstream.sh")
     files.sort()
 
     f = open("MANIFEST.in", "w")
