@@ -19,7 +19,7 @@ def read_long_description():
     return open(fn).read()
 
 ext_modules = []
-ext_modules.append(Extension("mwlib._rl_accel", ['upstream-src/src/rl_addons/rl_accel/_rl_accel.c']))
+ext_modules.append(Extension("mwlib.ext._rl_accel", ['upstream-src/src/rl_addons/rl_accel/_rl_accel.c']))
 
 packages = ["mwlib.ext."+x for x in find_packages("upstream-src/src")]+find_packages(".")
 
