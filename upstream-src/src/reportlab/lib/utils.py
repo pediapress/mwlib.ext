@@ -661,6 +661,7 @@ class ImageReader(object):
                 im = self._image
                 mode = self.mode = im.mode
                 if mode=='RGBA':
+                    im.load()
                     self._dataA = ImageReader(im.split()[3])
                     im = im.convert('RGB')
                     self.mode = 'RGB'
