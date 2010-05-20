@@ -1393,6 +1393,10 @@ class Paragraph(Flowable):
                     for i in xrange(1, nLines):
                         dpl( tx, _offsets[i], lines[i][0], lines[i][1], noJustifyLast and i==lim)
             else:
+                if self.style.wordWrap == 'RTL':
+                    for line in lines:
+                        line.words = line.words[::-1]
+
                 f = lines[0]
                 if rl_config.paraFontSizeHeightOffset:
                     cur_y = self.height - f.fontSize
@@ -1416,6 +1420,10 @@ class Paragraph(Flowable):
 
                 #set up the font etc.
                 tx = self.beginText(cur_x, cur_y)
+                # set the paragraph direction
+                if self.style.wordWrap == 'RTL':
+                    tx.direction = 'RTL'
+
                 xs = tx.XtraState=ABag()
                 xs.textColor=None
                 xs.rise=0
