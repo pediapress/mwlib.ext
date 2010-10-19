@@ -18,13 +18,14 @@ a registry of Font, TypeFace and Encoding objects.  Ideally these
 would be pre-loaded, but due to a nasty circularity problem we
 trap attempts to access them and do it on first access.
 """
-import string, os
+import string, os, sys
 from types import StringType, ListType, TupleType
 from reportlab.pdfbase import _fontdata
 from reportlab.lib.logger import warnOnce
 from reportlab.lib.utils import rl_isfile, rl_glob, rl_isdir, open_and_read, open_and_readlines, findInPaths
 from reportlab.rl_config import defaultEncoding, T1SearchPath
 import rl_codecs
+_notdefChar = chr(110)
 
 rl_codecs.RL_Codecs.register()
 standardFonts = _fontdata.standardFonts
@@ -223,10 +224,15 @@ def bruteForceSearchForAFM(faceName):
         if not rl_isdir(dirname): continue
         possibles = rl_glob(dirname + os.sep + '*.[aA][fF][mM]')
         for possible in possibles:
-            (topDict, glyphDict) = parseAFMFile(possible)
-            if topDict['FontName'] == faceName:
-                return possible
-    return None
+            try:
+                topDict, glyphDict = parseAFMFile(possible)
+                if topDict['FontName'] == faceName:
+                    return possible
+            except:
+                t,v,b=sys.exc_info()
+                v.args = (' '.join(map(str,v.args))+', while looking for faceName=%r' % faceName,)
+                raise 
+
 
 #for faceName in standardFonts:
 #    registerTypeFace(TypeFace(faceName))
@@ -371,6 +377,8 @@ class Font:
             _ = []
         self.substitutionFonts = _
         self._calcWidths()
+        self._notdefChar = _notdefChar
+        self._notdefFont = name=='ZapfDingbats' and self or _notdefFont
 
     def __repr__(self):
         return "<%s %s>" % (self.__class__.__name__, self.face.name)
@@ -582,7 +590,7 @@ def registerTypeFace(face):
 
 def registerEncoding(enc):
     assert isinstance(enc, Encoding), 'Not an Encoding: %s' % enc
-    if _encodings.has_key(enc.name):
+    if enc.name in _encodings:
         # already got one, complain if they are not the same
         if enc.isEqual(_encodings[enc.name]):
             enc.freeze()
@@ -668,7 +676,7 @@ def findFontAndRegister(fontName):
     registerFont(font)
     return font
 
-def _py_getFont(fontName):
+def getFont(fontName):
     """Lazily constructs known fonts if not found.
 
     Names of form 'face-encoding' will be built if
@@ -680,13 +688,8 @@ def _py_getFont(fontName):
     except KeyError:
         return findFontAndRegister(fontName)
 
-try:
-    from _rl_accel import getFontU as getFont
-except ImportError:
-    getFont = _py_getFont
-
-_notdefFont,_notdefChar = getFont('ZapfDingbats'),chr(110)
-standardT1SubstitutionFonts.extend([getFont('Symbol'),getFont('ZapfDingbats')])
+_notdefFont = getFont('ZapfDingbats')
+standardT1SubstitutionFonts.extend([getFont('Symbol'),_notdefFont])
 
 def getAscentDescent(fontName,fontSize=None):
     font = getFont(fontName)
@@ -714,14 +717,10 @@ def getRegisteredFontNames():
     reg.sort()
     return reg
 
-def _py_stringWidth(text, fontName, fontSize, encoding='utf8'):
-    """Define this anyway so it can be tested, but whether it is used or not depends on _rl_accel"""
+def stringWidth(text, fontName, fontSize, encoding='utf8'):
+    """Compute width of string in points;
+    not accelerated as fast enough because of _instanceStringWidthU"""
     return getFont(fontName).stringWidth(text, fontSize, encoding=encoding)
-
-try:
-    from _rl_accel import stringWidthU as stringWidth
-except ImportError:
-    stringWidth = _py_stringWidth
 
 try:
     from _rl_accel import _instanceStringWidthU

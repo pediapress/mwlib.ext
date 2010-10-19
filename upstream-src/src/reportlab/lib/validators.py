@@ -119,7 +119,7 @@ class isNumberInRange(_isNumber):
         except ValueError:
             pass
         return False
-    
+
 
 class _isListOfShapes(Validator):
     "ListOfShapes validator class."
@@ -166,6 +166,16 @@ class _isColorOrNone(Validator):
         if x is None: return True
         return isColor(x)
 
+from reportlab.lib.normalDate import NormalDate
+class _isNormalDate(Validator):
+    def test(self,x):
+        if isinstance(x,NormalDate):
+            return True
+        return x is not None and self.normalizeTest(x)
+
+    def normalize(self,x):
+        return NormalDate(x)
+
 class _isValidChild(Validator):
     "ValidChild validator class."
     def test(self, x):
@@ -182,7 +192,7 @@ class _isValidChildOrNone(_isValidChild):
 
 class _isCallable(Validator):
     def test(self, x):
-        return callable(x)
+        return hasattr(x,'__call__')
 
 class OneOf(Validator):
     """Make validator functions for list of choices.
@@ -272,7 +282,7 @@ class matchesPattern(Validator):
             text = x
         else:
             text = str(x)
-        return (self._pattern.match(text) <> None)
+        return (self._pattern.match(text) != None)
 
 class DerivedValue:
     """This is used for magic values which work themselves out.
@@ -295,12 +305,21 @@ class DerivedValue:
 class Inherit(DerivedValue):
     def __repr__(self):
         return "inherit"
-    
+
     def getValue(self, renderer, attr):
         return renderer.getStateValue(attr)
-
 inherit = Inherit()
-    
+
+class NumericAlign(str):
+    '''for creating the numeric string value for anchors etc etc
+    dp is the character to align on (the last occurrence will be used)
+    dpLen is the length of characters after the dp
+    '''
+    def __new__(cls,dp='.',dpLen=0):
+        self = str.__new__(cls,'numeric')
+        self._dp=dp
+        self._dpLen = dpLen
+        return self
 
 isAuto = Auto()
 isBoolean = _isBoolean()
@@ -334,3 +353,4 @@ isCallable = _isCallable()
 isStringOrCallable=EitherOr((isString,isCallable),'isStringOrCallable')
 isStringOrCallableOrNone=NoneOr(isStringOrCallable,'isStringOrCallableNone')
 isStringOrNone=NoneOr(isString,'isStringOrNone')
+isNormalDate=_isNormalDate()

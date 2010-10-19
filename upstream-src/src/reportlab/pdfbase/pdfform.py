@@ -39,6 +39,7 @@ WHO WISH TO REMAIN ANONYMOUS.
 
 import string
 from reportlab.pdfbase.pdfdoc import LINEEND, PDFString, PDFStream, PDFDictionary, PDFName
+from reportlab.lib.colors import obj_R_G_B
 
 #==========================public interfaces
 
@@ -134,6 +135,7 @@ def getForm(canvas):
         return theform
 
 class AcroForm:
+    __PDFObject__ = True
     def __init__(self):
         self.fields = []
     def textField(self, canvas, title, xmin, ymin, xmax, ymax, value="", maxlen=1000000, multiline=0):
@@ -141,7 +143,7 @@ class AcroForm:
         doc = canvas._doc
         page = doc.thisPageRef()
         # determine text info
-        (R,G,B) = canvas._fillColorRGB
+        R, G, B = obj_R_G_B(canvas._fillColorObj)
         #print "rgb", (R,G,B)
         font = canvas. _fontname
         fontsize = canvas. _fontsize
@@ -154,7 +156,7 @@ class AcroForm:
         doc = canvas._doc
         page = doc.thisPageRef()
         # determine text info
-        (R,G,B) = canvas._fillColorRGB
+        R, G, B = obj_R_G_B(canvas._fillColorObj)
         #print "rgb", (R,G,B)
         font = canvas. _fontname
         fontsize = canvas. _fontsize
