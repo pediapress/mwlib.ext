@@ -441,9 +441,18 @@ def _split_blParaHard(blPara,start,stop):
                 elif g.text[-1]!=' ': g.text += ' '
     return f
 
-def _drawBullet(canvas, offset, cur_y, bulletText, style):
+def _drawBullet(canvas, offset, cur_y, bulletText, style, rtl):
     '''draw a bullet text could be a simple string or a frag list'''
-    tx2 = canvas.beginText(style.bulletIndent, cur_y+getattr(style,"bulletOffsetY",0))
+    width = canvas._doctemplate.width
+    if not rtl:
+        tx2 = canvas.beginText(style.bulletIndent, cur_y+getattr(style,"bulletOffsetY",0))
+    else:
+        negative_indent = style.bulletIndent + 15 # FIXME: replace the magic constant 15 by something that makes sense
+        tx2 = canvas.beginText(width-negative_indent, cur_y+getattr(style,"bulletOffsetY",0))
+        # determine bullet width
+        bt = bulletText[0].text
+        bulletWidth = stringWidth(bt, style.bulletFontName, style.bulletFontSize)
+
     tx2.setFont(style.bulletFontName, style.bulletFontSize)
     tx2.setFillColor(hasattr(style,'bulletColor') and style.bulletColor or style.textColor)
     if isinstance(bulletText,basestring):
@@ -459,6 +468,8 @@ def _drawBullet(canvas, offset, cur_y, bulletText, style):
     #bulletEnd = tx2.getX()
     bulletEnd = tx2.getX() + style.bulletFontSize * 0.6
     offset = max(offset,bulletEnd - style.leftIndent)
+    if rtl:
+        offset = width - offset + bulletWidth
     return offset
 
 def _handleBulletWidth(bulletText,style,maxWidths):
@@ -1340,7 +1351,7 @@ class Paragraph(Flowable):
                 else:
                     cur_y = self.height - getattr(f,'ascent',f.fontSize) 
                 if bulletText:
-                    offset = _drawBullet(canvas,offset,cur_y,bulletText,style)
+                    offset = _drawBullet(canvas,offset,cur_y,bulletText,style,rtl=style.wordWrap=='RTL')
 
                 #set up the font etc.
                 canvas.setFillColor(f.textColor)
@@ -1406,7 +1417,7 @@ class Paragraph(Flowable):
                 dpl = _leftDrawParaLineX
                 if bulletText:
                     oo = offset
-                    offset = _drawBullet(canvas,offset,cur_y,bulletText,style)
+                    offset = _drawBullet(canvas,offset,cur_y,bulletText,style, rtl=style.wordWrap=='RTL')
                 if alignment == TA_LEFT:
                     dpl = _leftDrawParaLineX
                 elif alignment == TA_CENTER:
