@@ -46,9 +46,9 @@ except:
     from UserDict import UserDict as _UserDict
 
 class CIDict(_UserDict):
-    def __init__(self,*a,**kw):
-        map(self.update, a)
-        self.update(kw)
+    def __init__(self,*args,**kwds):
+        for a in args: self.update(a)
+        self.update(kwds)
 
     def update(self,D):
         for k,v in D.items(): self[k] = v
@@ -80,7 +80,7 @@ class CIDict(_UserDict):
         except KeyError:
             return dv
 
-    def has_key(self,k):
+    def __contains__(self,k):
         try:
             self[k]
             return True
@@ -293,7 +293,7 @@ def recursiveImport(modulename, baseDir=None, noCWD=0, debug=0):
         sys.path = opath
         msg = "recursiveimport(%s,baseDir=%s) failed" % (modulename,baseDir)
         if baseDir:
-            msg = msg + " under paths '%s'" % `path`
+            msg = msg + " under paths '%s'" % repr(path)
         raise ImportError, msg
 
 def recursiveGetAttr(obj, name):
@@ -341,7 +341,6 @@ else:
         except ImportError:
             Image = None
     haveImages = Image is not None
-    if haveImages: del Image
 
 try:
     from cStringIO import StringIO as __StringIO
@@ -435,8 +434,8 @@ def open_for_read_by_name(name,mode='b'):
         if 'b' not in mode and os.linesep!='\n': s = s.replace(os.linesep,'\n')
         return getStringIO(s)
 
-import urllib
-def open_for_read(name,mode='b', urlopen=urllib.urlopen):
+import urllib2
+def open_for_read(name,mode='b', urlopen=urllib2.urlopen):
     '''attempt to open a file or URL for reading'''
     if hasattr(name,'read'): return name
     try:
@@ -446,7 +445,7 @@ def open_for_read(name,mode='b', urlopen=urllib.urlopen):
             return getStringIO(urlopen(name).read())
         except:
             raise IOError('Cannot open resource "%s"' % name)
-del urllib
+del urllib2
 
 def open_and_read(name,mode='b'):
     return open_for_read(name,mode).read()
@@ -493,7 +492,7 @@ def rl_getmtime(pn,os_path_isfile=os.path.isfile,os_path_normpath=os.path.normpa
     return time_mktime((y,m,d,h,m,s,0,0,0))
 
 def rl_get_module(name,dir):
-    if sys.modules.has_key(name):
+    if name in sys.modules:
         om = sys.modules[name]
         del sys.modules[name]
     else:
@@ -519,9 +518,8 @@ def rl_get_module(name,dir):
 
 def _isPILImage(im):
     try:
-        from PIL.Image import Image
-        return isinstance(im,Image)
-    except ImportError:
+        return isinstance(im,Image.Image)
+    except AttributeError:
         return 0
     
 from mwlib import lrucache
@@ -531,11 +529,11 @@ class ImageReader(object):
     _cache={}
     _cached_readers = {}
     _data_cache = lrucache.lrucache(5)
-    
-    def __init__(self, fileName):
+    def __init__(self, fileName,ident=None):
         if isinstance(fileName,ImageReader):
             self.__dict__ = fileName.__dict__   #borgize
             return
+        self._ident = ident
         #start wih lots of null private fields, to be populated by
         #the relevant engine.
         self.fileName = fileName
@@ -591,27 +589,28 @@ class ImageReader(object):
                     try:
                         self._width,self._height,c=readJPEGInfo(self.fp)
                     except:
-                        raise RuntimeError('Imaging Library not available, unable to import bitmaps only jpegs')
+                        annotateException('\nImaging Library not available, unable to import bitmaps only jpegs\nfileName=%r identity=%s'%(fileName,self.identity()))
                     self.jpeg_fh = self._jpeg_fh
                     self._data = self.fp.read()
                     self._dataA=None
                     self.fp.seek(0)
             except:
-                et,ev,tb = sys.exc_info()
-                if hasattr(ev,'args'):
-                    a = str(ev.args[-1])+(' fileName=%r'%fileName)
-                    ev.args= ev.args[:-1]+(a,)
-                    raise et,ev,tb
-                else:
-                    raise
+                annotateException('\nfileName=%r identity=%s'%(fileName,self.identity()))
+
+    def identity(self):
+        '''try to return information that will identify the instance'''
+        fn = self.fileName
+        if not isinstance(fn,basestring):
+            fn = getattr(getattr(self,'fp',None),'name',None)
+        ident = self._ident
+        return '[%s@%s%s%s]' % (self.__class__.__name__,hex(id(self)),ident and (' ident=%r' % ident) or '',fn and (' filename=%r' % fn) or '')
 
     def _read_image(self, fp):
         if sys.platform[0:4] == 'java':
             from javax.imageio import ImageIO
             return ImageIO.read(fp)
         else:
-            import PIL.Image
-            return PIL.Image.open(fp)
+            return Image.open(fp)
 
     def _jpeg_fh(self):
         fp = self.fp
@@ -686,7 +685,7 @@ class ImageReader(object):
         if sys.platform[0:4] == 'java':
             return None
         else:
-            if self._image.info.has_key("transparency"):
+            if "transparency" in self._image.info:
                 transparency = self._image.info["transparency"] * 3
                 palette = self._image.palette
                 if not palette: # fix: some images do not seem to have a palette at all
@@ -1134,3 +1133,60 @@ def findInPaths(fn,paths,isfile=True,fail=False):
                 return pfn
     if fail: raise ValueError('cannot locate %r with paths=%r' % (fn,paths))
     return fn
+
+def annotateException(msg,enc='utf8'):
+    '''add msg to the args of an existing exception'''
+    if not msg: rise
+    t,v,b=sys.exc_info()
+    if not hasattr(v,'args'): raise
+    e = -1
+    A = list(v.args)
+    for i,a in enumerate(A):
+        if isinstance(a,basestring):
+            e = i
+            break
+    if e>=0:
+        if isinstance(a,unicode):
+            if not isinstance(msg,unicode):
+                msg=msg.decode(enc)
+        else:
+            if isinstance(msg,unicode):
+                msg=msg.encode(enc)
+            else:
+                msg = str(msg)
+        if isinstance(v,IOError) and getattr(v,'strerror',None):
+            v.strerror = msg+'\n'+str(v.strerror)
+        else:
+            A[e] += msg
+    else:
+        A.append(msg)
+    v.args = tuple(A)
+    raise t,v,b
+    
+def escapeOnce(data):
+    """Ensure XML output is escaped just once, irrespective of input
+
+    >>> escapeOnce('A & B')
+    'A &amp; B'
+    >>> escapeOnce('C &amp; D')
+    'C &amp; D'
+    >>> escapeOnce('E &amp;amp; F')
+    'E &amp; F'
+
+    """
+    data = data.replace("&", "&amp;")
+
+    #...but if it was already escaped, make sure it
+    # is not done twice....this will turn any tags
+    # back to how they were at the start.
+    data = data.replace("&amp;amp;", "&amp;")
+    data = data.replace("&amp;gt;", "&gt;")
+    data = data.replace("&amp;lt;", "&lt;")
+    data = data.replace("&amp;#", "&#")
+
+    #..and just in case someone had double-escaped it, do it again
+    data = data.replace("&amp;amp;", "&amp;")
+    data = data.replace("&amp;gt;", "&gt;")
+    data = data.replace("&amp;lt;", "&lt;")
+    return data
+    

@@ -7,8 +7,9 @@ __doc__='''Configuration file.  You may edit this if you wish.'''
 allowTableBoundsErrors =    1 # set to 0 to die on too large elements in tables in debug (recommend 1 for production use)
 shapeChecking =             1
 defaultEncoding =           'WinAnsiEncoding'       # 'WinAnsi' or 'MacRoman'
-defaultGraphicsFontName=    'Times-Roman'               #initializer for STATE_DEFAULTS in shapes.py
+defaultGraphicsFontName=    'Times-Roman'           #initializer for STATE_DEFAULTS in shapes.py
 pageCompression =           1                       # default page compression mode
+useA85 =                    1                       #set to 0 to disable Ascii Base 85 stream filters
 defaultPageSize =           'A4'                    #default page size
 defaultImageCaching =       0                       #set to zero to remove those annoying cached images
 ZLIB_WARNINGS =             1
@@ -23,7 +24,7 @@ eps_ttf_embed=              1                       #set to False to disable
 eps_ttf_embed_uid=          0                       #set to 1 to enable
 overlapAttachedSpace=       1                       #if set non false then adajacent flowable space after
                                                     #and space before are merged (max space is used).
-longTableOptimize =         0                       #default don't use Henning von Bargen's long table optimizations
+longTableOptimize =         1                       #default don't use Henning von Bargen's long table optimizations
 autoConvertEncoding  =      0                       #convert internally as needed (experimental)
 _FUZZ=                      1e-6                    #fuzz for layout arithmetic
 wrapA85=                    0                       #set to 1 to get old wrapped line behaviour
@@ -32,6 +33,9 @@ odbc_driver=                'odbc'                  #default odbc driver
 platypus_link_underline=    0                       #paragraph links etc underlined if true
 canvas_basefontname=        'Helvetica'             #this is used to initialize the canvas; if you override to make
                                                     #something else you are responsible for ensuring the font is registered etc etc
+                                                    #this will be used everywhere and the font family connections will be made
+                                                    #if the bold/italic/bold italic fonts are also registered and defined as a family.
+
 allowShortTableRows=1                               #allows some rows in a table to be short
 imageReaderFlags=-1                                  #attempt to convert images into internal memory files to reduce
                                                     #the number of open files (see lib.utils.ImageReader)
@@ -39,6 +43,9 @@ imageReaderFlags=-1                                  #attempt to convert images 
                                                     #if imageReaderFlags&4 then cache data 
                                                     #if imageReaderFlags==-1 then use Ralf Schmitt's re-opening approach
 paraFontSizeHeightOffset=   0                       #if true paragraphs start at height-fontSize
+canvas_baseColor=           None                    #initialize the canvas fill and stroke colors if this is set
+ignoreContainerActions=     1                       #if true then action flowables in flowable _Containers will be ignored
+ttfAsciiReadable=           1                       #smaller subsets when set to 0
 
 # places to look for T1Font information
 T1SearchPath =  (
@@ -72,6 +79,7 @@ TTFSearchPath = (
                 'c:/winnt/fonts',
                 'c:/windows/fonts',
                 '/usr/lib/X11/fonts/TrueType/',
+                '/usr/share/fonts/truetype',
                 '%(REPORTLAB_DIR)s/fonts',      #special
                 '%(REPORTLAB_DIR)s/../fonts',   #special
                 '%(REPORTLAB_DIR)s/../../fonts',#special
@@ -121,11 +129,12 @@ except:
 _SAVED = {}
 sys_version=None
 
+#this is used to set the options from
 def _setOpt(name, value, conv=None):
     '''set a module level value from environ/default'''
     from os import environ
     ename = 'RL_'+name
-    if environ.has_key(ename):
+    if ename in environ:
         value = environ[ename]
     if conv: value = conv(value)
     globals()[name] = value
@@ -165,7 +174,10 @@ platypus_link_underline
 canvas_basefontname
 allowShortTableRows
 imageReaderFlags
-paraFontSizeHeightOffset'''.split()
+paraFontSizeHeightOffset
+canvas_baseColor
+ignoreContainerActions
+ttfAsciiReadable'''.split()
     import os, sys
     global sys_version, _unset_
     sys_version = sys.version.split()[0]        #strip off the other garbage

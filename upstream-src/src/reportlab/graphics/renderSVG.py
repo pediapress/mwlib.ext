@@ -27,7 +27,8 @@ sin = math.sin
 cos = math.cos
 pi = math.pi
 
-LINE_STYLES = 'stroke-width stroke-linecap stroke fill stroke-dasharray'
+AREA_STYLES = 'stroke-width stroke-linecap stroke fill stroke-dasharray'
+LINE_STYLES = 'stroke-width stroke-linecap stroke stroke-dasharray'
 TEXT_STYLES = 'font-family font-size'
 
 ### top-level user function ###
@@ -183,23 +184,17 @@ class SVGCanvas:
 
         return stringWidth(s, font, fontSize)
 
-    def _formatStyle(self, include=''):
-        include = include.split()
-        keys = self.style.keys()
+    def _formatStyle(self, include='', exclude='',**kwds):
+        style = self.style.copy()
+        style.update(kwds)
+        keys = style.keys()
         if include:
-            #2.1-safe version of the line below follows:
-            #keys = filter(lambda k: k in include, keys)
-            tmp = []
-            for word in keys:
-                if word in include:
-                    tmp.append(word)
-            keys = tmp
-
-        items = []
-        for k in keys:
-            items.append((k, self.style[k]))
-        items = map(lambda i: "%s: %s"%(i[0], i[1]), items)
-
+            keys = [k for k in keys if k in include.split()]
+        if exclude:
+            exclude = exclude.split()
+            items = [k+': '+str(style[k]) for k in keys if k not in exclude]
+        else:
+            items = [k+': '+str(style[k]) for k in keys]
         return '; '.join(items) + ';'
 
     def _escape(self, s):
@@ -233,9 +228,9 @@ class SVGCanvas:
 
         return codeline % data
 
-    def _fillAndStroke(self, code, clip=0, link_info=None):
+    def _fillAndStroke(self, code, clip=0, link_info=None,styles=AREA_STYLES):
         path = transformNode(self.doc, "path",
-            d=self.path, style=self._formatStyle(LINE_STYLES))
+            d=self.path, style=self._formatStyle(styles))
         if link_info :
             path = self._add_link(path, link_info)
         self.currGroup.appendChild(path)
@@ -309,9 +304,11 @@ class SVGCanvas:
 
         if self.verbose: print "+++ SVGCanvas.rect"
 
+        x = min(x1,x2)
+        y = min(y1,y2)
         rect = transformNode(self.doc, "rect",
-            x=x1, y=y1, width=x2-x1, height=y2-y1,
-            style=self._formatStyle(LINE_STYLES))
+            x=x, y=y, width=max(x1,x2)-x, height=max(y1,y2)-y,
+            style=self._formatStyle(AREA_STYLES))
 
         if link_info :
             rect = self._add_link(rect, link_info)
@@ -327,7 +324,7 @@ class SVGCanvas:
 
         rect = transformNode(self.doc, "rect",
             x=x1, y=y1, width=x2-x1, height=y2-y1, rx=rx, ry=ry,
-            style=self._formatStyle(LINE_STYLES))
+            style=self._formatStyle(AREA_STYLES))
 
         if link_info :
             rect = self._add_link(rect, link_info)
@@ -365,6 +362,8 @@ class SVGCanvas:
                     x -= textLen
                 elif text_anchor=='middle':
                     x -= textLen/2.
+                elif text_anchor=='numeric':
+                    x -= numericXShift(text_anchor,s,textLen,self._font,self._fontSize)
                 else:
                     raise ValueError, 'bad value for text_anchor ' + str(text_anchor)
         self.drawString(x,y,text,angle=angle, link_info=link_info)
@@ -401,7 +400,7 @@ class SVGCanvas:
 
         ellipse = transformNode(self.doc, "ellipse",
             cx=(x1+x2)/2.0, cy=(y1+y2)/2.0, rx=(x2-x1)/2.0, ry=(y2-y1)/2.0,
-            style=self._formatStyle(LINE_STYLES))
+            style=self._formatStyle(AREA_STYLES))
 
         if link_info:
             ellipse = self._add_link(ellipse, link_info)
@@ -411,7 +410,7 @@ class SVGCanvas:
     def circle(self, xc, yc, r, link_info=None):
         circle = transformNode(self.doc, "circle",
             cx=xc, cy=yc, r=r,
-            style=self._formatStyle(LINE_STYLES))
+            style=self._formatStyle(AREA_STYLES))
 
         if link_info:
             circle = self._add_link(circle, link_info)
@@ -476,7 +475,7 @@ class SVGCanvas:
                 pairs.append("%f %f" % (points[i]))
             pts = ', '.join(pairs)
             polyline = transformNode(self.doc, "polygon",
-                points=pts, style=self._formatStyle(LINE_STYLES))
+                points=pts, style=self._formatStyle(AREA_STYLES))
 
             if link_info:
                 polyline = self._add_link(polyline, link_info)
@@ -505,7 +504,7 @@ class SVGCanvas:
                 pairs.append("%f %f" % (points[i]))
             pts = ', '.join(pairs)
             polyline = transformNode(self.doc, "polyline",
-                points=pts, style=self._formatStyle(LINE_STYLES))
+                points=pts, style=self._formatStyle(AREA_STYLES,fill=None))
             self.currGroup.appendChild(polyline)
 
     ### groups ###
@@ -580,7 +579,7 @@ class _SVGRenderer(Renderer):
 
         if self.verbose: print "### begin _SVGRenderer.drawNode(%r)" % node
 
-        self._canvas.comment('begin node %s'%`node`)
+        self._canvas.comment('begin node %r'%node)
         color = self._canvas._color
         style = self._canvas.style.copy()
         if not (isinstance(node, Path) and node.isClipPath):
@@ -597,12 +596,12 @@ class _SVGRenderer(Renderer):
         rDeltas = self._tracker.pop()
         if not (isinstance(node, Path) and node.isClipPath):
             pass #self._canvas.restoreState()
-        self._canvas.comment('end node %s'%`node`)
+        self._canvas.comment('end node %r'%node)
         self._canvas._color = color
 
         #restore things we might have lost (without actually doing anything).
         for k, v in rDeltas.items():
-            if self._restores.has_key(k):
+            if k in self._restores:
                 setattr(self._canvas,self._restores[k],v)
         self._canvas.style = style
 
@@ -679,13 +678,15 @@ class _SVGRenderer(Renderer):
         if self._canvas._fillColor:
             S = self._tracker.getState()
             text_anchor, x, y, text = S['textAnchor'], stringObj.x, stringObj.y, stringObj.text
-            if not text_anchor in ['start', 'inherited']:
+            if not text_anchor in ('start', 'inherited'):
                 font, fontSize = S['fontName'], S['fontSize']
                 textLen = stringWidth(text, font,fontSize)
                 if text_anchor=='end':
-                    x = x-textLen
+                    x -= textLen
                 elif text_anchor=='middle':
-                    x = x - textLen/2
+                    x -= textLen/2
+                elif text_anchor=='numeric':
+                    x -= numericXShift(text_anchor,text,textLen,font,fontSize)
                 else:
                     raise ValueError, 'bad value for text_anchor ' + str(text_anchor)
             self._canvas.drawString(text,x,y,link_info=self._get_link_info_dict(stringObj))
