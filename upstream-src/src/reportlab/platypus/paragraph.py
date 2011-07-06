@@ -1383,8 +1383,7 @@ class Paragraph(Flowable):
 
                 ws = lines[0][0]
                 if bulletText:
-                    offset = _drawBullet(canvas,offset,cur_y,bulletText,style,rtl=style.wordWrap=='RTL' and self._widths or False)
-
+                    offset = _drawBullet(canvas,offset,cur_y,bulletText,style,rtl=style.wordWrap=='RTL' and getattr(self, '_widths', None))
                 #set up the font etc.
                 canvas.setFillColor(f.textColor)
 
@@ -1449,7 +1448,7 @@ class Paragraph(Flowable):
                 dpl = _leftDrawParaLineX
                 if bulletText:
                     oo = offset
-                    offset = _drawBullet(canvas,offset,cur_y,bulletText,style, rtl=style.wordWrap=='RTL' and self._widths or False)
+                    offset = _drawBullet(canvas,offset,cur_y,bulletText,style, rtl=style.wordWrap=='RTL' and getattr(self, '_widths', None))
                 if alignment == TA_LEFT:
                     dpl = _leftDrawParaLineX
                 elif alignment == TA_CENTER:
