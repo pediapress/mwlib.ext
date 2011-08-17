@@ -363,7 +363,7 @@ class PDFTextObject(_PDFColorSetter):
         # Use pyfribidi to write the text in the correct visual order.
         directions = { 'LTR': DIR_LTR, 'RTL': DIR_RTL }
         text = log2vis(text, directions.get(self.direction, DIR_ON), reordernsm=False)
-
+        text = text.replace(unichr(65279).encode('utf-8'), '') #ignore this character
         canv = self._canvas
         font = pdfmetrics.getFont(self._fontname)
         R = []
