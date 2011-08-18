@@ -732,7 +732,9 @@ def stringWidth(text, fontName, fontSize, encoding='utf8'):
     """Compute width of string in points;
     not accelerated as fast enough because of _instanceStringWidthU"""
     text = log2vis(text, DIR_RTL if rl_config.rtl else DIR_LTR)
-    text = text.replace(unichr(65279).encode('utf-8'), '') #ignore zero width no-break space
+    rpl = unichr(65279)
+    rpl = rpl.encode('utf-8') if isinstance(text, str) else rpl
+    text = text.replace(rpl, '') #ignore zero width no-break space
     return getFont(fontName).stringWidth(text, fontSize, encoding=encoding)
 
 try:
