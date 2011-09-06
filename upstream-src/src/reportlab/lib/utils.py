@@ -1189,4 +1189,17 @@ def escapeOnce(data):
     data = data.replace("&amp;gt;", "&gt;")
     data = data.replace("&amp;lt;", "&lt;")
     return data
+
+import re
+
+# 'Other, Format' http://www.fileformat.info/info/unicode/category/Cf/list.htm
+noprint_chars = [unichr(int(c)) for c in '173 1536 1537 1538 1539 1757 1807 6068 6069 8203 8204 8205 8206 8207 8234 8235 8236 8237 8238 8288 8289 8290 8291 8292 8298 8299 8300 8301 8302 8303 65279 65529 65530 65531'.split()]
+
+repl_regex = re.compile('|'.join(noprint_chars))
+
+def remove_noprint(s):
+    if isinstance(s, str):
+        return repl_regex.sub('', s.decode('utf-8')).encode('utf-8')
+    else:
+        return repl_regex.sub('', s)
     

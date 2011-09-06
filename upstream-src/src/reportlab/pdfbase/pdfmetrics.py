@@ -22,7 +22,7 @@ import string, os, sys
 from types import StringType, ListType, TupleType
 from reportlab.pdfbase import _fontdata
 from reportlab.lib.logger import warnOnce
-from reportlab.lib.utils import rl_isfile, rl_glob, rl_isdir, open_and_read, open_and_readlines, findInPaths
+from reportlab.lib.utils import rl_isfile, rl_glob, rl_isdir, open_and_read, open_and_readlines, findInPaths, remove_noprint
 from reportlab import rl_config
 defaultEncoding = rl_config.defaultEncoding
 T1SearchPath = rl_config.T1SearchPath
@@ -732,9 +732,7 @@ def stringWidth(text, fontName, fontSize, encoding='utf8'):
     """Compute width of string in points;
     not accelerated as fast enough because of _instanceStringWidthU"""
     text = log2vis(text, DIR_RTL if rl_config.rtl else DIR_LTR)
-    rpl = unichr(65279)
-    rpl = rpl.encode('utf-8') if isinstance(text, str) else rpl
-    text = text.replace(rpl, '') #ignore zero width no-break space
+    text = remove_noprint(text)
     return getFont(fontName).stringWidth(text, fontSize, encoding=encoding)
 
 try:

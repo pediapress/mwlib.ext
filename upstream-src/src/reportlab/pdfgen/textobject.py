@@ -12,7 +12,7 @@ Progress Reports:
 import string
 from types import *
 from reportlab.lib.colors import Color, CMYKColor, CMYKColorSep, toColor, black, white, _CMYK_black, _CMYK_white
-from reportlab.lib.utils import fp_str
+from reportlab.lib.utils import fp_str, remove_noprint
 from reportlab.pdfbase import pdfmetrics
 
 # try to import pyfribidi
@@ -363,9 +363,7 @@ class PDFTextObject(_PDFColorSetter):
         # Use pyfribidi to write the text in the correct visual order.
         directions = { 'LTR': DIR_LTR, 'RTL': DIR_RTL }
         text = log2vis(text, directions.get(self.direction, DIR_ON), reordernsm=False)
-        rpl = unichr(65279)
-        rpl = rpl.encode('utf-8') if isinstance(text, str) else rpl
-        text = text.replace(rpl, '') #ignore zero width no-break space
+        text = remove_noprint(text)
         canv = self._canvas
         font = pdfmetrics.getFont(self._fontname)
         R = []
