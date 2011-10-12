@@ -9,6 +9,12 @@ ez_setup.use_setuptools()
 from setuptools import setup, Extension, find_packages
 import distutils.util
 
+from distutils import sysconfig
+if sysconfig.get_config_var("LIBM") == "-lm":
+    libraries = ["m"]
+else:
+    libraries = []
+
 
 install_requires=[]
 execfile(distutils.util.convert_path('mwlib/_extversion.py')) 
@@ -19,7 +25,9 @@ def read_long_description():
     return open(fn).read()
 
 ext_modules = []
-ext_modules.append(Extension("mwlib.ext._rl_accel", ['upstream-src/src/rl_addons/rl_accel/_rl_accel.c']))
+ext_modules.append(Extension("mwlib.ext._rl_accel",
+                             ['upstream-src/src/rl_addons/rl_accel/_rl_accel.c'],
+                             libraries=libraries))
 
 packages = ["mwlib.ext."+x for x in find_packages("upstream-src/src")]+find_packages(".")
 
