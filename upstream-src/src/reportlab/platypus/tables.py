@@ -550,7 +550,10 @@ class Table(Flowable):
             if None not in H: hmax = lim
 
             if spanCons:
-                spanFixDim(H0,H,spanCons,lim=hmax)
+                try:
+                    spanFixDim(H0,H,spanCons,lim=hmax)
+                except TypeError:
+                    pass
 
         height = self._height = sum(H[:hmax])
         self._rowpositions = [height]    # index 0 is actually topline; we skip when processing cells

@@ -22,9 +22,20 @@ import string, os, sys
 from types import StringType, ListType, TupleType
 from reportlab.pdfbase import _fontdata
 from reportlab.lib.logger import warnOnce
-from reportlab.lib.utils import rl_isfile, rl_glob, rl_isdir, open_and_read, open_and_readlines, findInPaths
-from reportlab.rl_config import defaultEncoding, T1SearchPath
+from reportlab.lib.utils import rl_isfile, rl_glob, rl_isdir, open_and_read, open_and_readlines, findInPaths, remove_noprint
+from reportlab import rl_config
+defaultEncoding = rl_config.defaultEncoding
+T1SearchPath = rl_config.T1SearchPath
 import rl_codecs
+
+try:
+    from pyfribidi2 import log2vis, ON as DIR_ON, LTR as DIR_LTR, RTL as DIR_RTL
+except:
+    import warnings
+    warnings.warn('pyfribidi is not installed - RTL not supported')
+    log2vis = lambda text, direction: text
+    DIR_ON = DIR_LTR = DIR_RTL = None
+
 _notdefChar = chr(110)
 
 rl_codecs.RL_Codecs.register()
@@ -720,6 +731,8 @@ def getRegisteredFontNames():
 def stringWidth(text, fontName, fontSize, encoding='utf8'):
     """Compute width of string in points;
     not accelerated as fast enough because of _instanceStringWidthU"""
+    text = log2vis(text, DIR_RTL if rl_config.rtl else DIR_LTR)
+    text = remove_noprint(text)
     return getFont(fontName).stringWidth(text, fontSize, encoding=encoding)
 
 try:

@@ -46,6 +46,7 @@ paraFontSizeHeightOffset=   0                       #if true paragraphs start at
 canvas_baseColor=           None                    #initialize the canvas fill and stroke colors if this is set
 ignoreContainerActions=     1                       #if true then action flowables in flowable _Containers will be ignored
 ttfAsciiReadable=           1                       #smaller subsets when set to 0
+rtl = 0 # right-to-left flag. set to True if text base direction is right-to-left
 
 # places to look for T1Font information
 T1SearchPath =  (

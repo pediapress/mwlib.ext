@@ -458,9 +458,19 @@ def _split_blParaHard(blPara,start,stop):
                 elif g.text[-1]!=' ': g.text += ' '
     return f
 
-def _drawBullet(canvas, offset, cur_y, bulletText, style):
+def _drawBullet(canvas, offset, cur_y, bulletText, style, rtl):
     '''draw a bullet text could be a simple string or a frag list'''
-    tx2 = canvas.beginText(style.bulletIndent, cur_y+getattr(style,"bulletOffsetY",0))
+    width = canvas._doctemplate.width
+    if not rtl:
+        tx2 = canvas.beginText(style.bulletIndent, cur_y+getattr(style,"bulletOffsetY",0))
+    else:
+        bt = bulletText[0].text
+        bulletWidth = stringWidth(bt, style.bulletFontName, style.bulletFontSize)
+        width = rtl[0]
+        bulletStart = width+style.rightIndent-(style.bulletIndent+bulletWidth)
+        tx2 = canvas.beginText(bulletStart, cur_y+getattr(style,"bulletOffsetY",0))
+
+
     tx2.setFont(style.bulletFontName, style.bulletFontSize)
     tx2.setFillColor(hasattr(style,'bulletColor') and style.bulletColor or style.textColor)
     if isinstance(bulletText,basestring):
@@ -472,11 +482,14 @@ def _drawBullet(canvas, offset, cur_y, bulletText, style):
             tx2.textOut(f.text)
 
     canvas.drawText(tx2)
-    #AR making definition lists a bit less ugly
-    #bulletEnd = tx2.getX()
-    bulletEnd = tx2.getX() + style.bulletFontSize * 0.6
-    offset = max(offset,bulletEnd - style.leftIndent)
+    if not rtl:
+        #AR making definition lists a bit less ugly
+        #bulletEnd = tx2.getX()
+        bulletEnd = tx2.getX() + style.bulletFontSize * 0.6
+        offset = max(offset,bulletEnd - style.leftIndent)
+
     return offset
+
 
 def _handleBulletWidth(bulletText,style,maxWidths):
     '''work out bullet width and adjust maxWidths[0] if neccessary
@@ -489,11 +502,16 @@ def _handleBulletWidth(bulletText,style,maxWidths):
             bulletWidth = 0
             for f in bulletText:
                 bulletWidth = bulletWidth + stringWidth(f.text, f.fontName, f.fontSize)
-        bulletRight = style.bulletIndent + bulletWidth + 0.6 * style.bulletFontSize
-        indent = style.leftIndent+style.firstLineIndent
-        if bulletRight > indent:
+
+        bulletLen = style.bulletIndent + bulletWidth + 0.6 * style.bulletFontSize
+        if style.wordWrap=='RTL':
+            indent = style.rightIndent+style.firstLineIndent
+        else:
+            indent = style.leftIndent+style.firstLineIndent
+        if bulletLen > indent:
             #..then it overruns, and we have less space available on line 1
-            maxWidths[0] -= (bulletRight - indent)
+            maxWidths[0] -= (bulletLen - indent)
+
 
 def splitLines0(frags,widths):
     '''
@@ -740,16 +758,17 @@ def cjkFragSplit(frags, maxWidths, calcBounds, encoding='utf8'):
         if endLine:
             extraSpace = maxWidth - widthUsed
             if not lineBreak:
-                extraSpace += w
                 #This is the most important of the Japanese typography rules.
                 #if next character cannot start a line, wrap it up to this line so it hangs
                 #in the right margin. We won't do two or more though - that's unlikely and
                 #would result in growing ugliness.
-                if i<nU:
-                    nextChar = U[i]
-                    if nextChar in ALL_CANNOT_START:
-                        extraSpace -= nextChar.width
-                        i += 1
+                #otherwise we need to push the character back
+                #and increase the extra space
+                #bug fix contributed by Alexander Vasilenko <alexs.vasilenko@gmail.com>
+                if u not in ALL_CANNOT_START:
+                    i -= 1
+                    extraSpace += w
+
             lines.append(makeCJKParaLine(U[lineStartPos:i],extraSpace,calcBounds))
             try:
                 maxWidth = maxWidths[len(lines)]
@@ -757,7 +776,7 @@ def cjkFragSplit(frags, maxWidths, calcBounds, encoding='utf8'):
                 maxWidth = maxWidths[-1]  # use the last one
 
             lineStartPos = i
-            widthUsed = w
+            widthUsed = 0
 
     #any characters left?
     if widthUsed > 0:
@@ -860,12 +879,12 @@ class Paragraph(Flowable):
         leftIndent = style.leftIndent
         first_line_width = availWidth - (leftIndent+style.firstLineIndent) - style.rightIndent
         later_widths = availWidth - leftIndent - style.rightIndent
-
+        self._widths = [first_line_width, later_widths]
         if style.wordWrap == 'CJK':
             #use Asian text wrap algorithm to break characters
-            blPara = self.breakLinesCJK([first_line_width, later_widths])
+            blPara = self.breakLinesCJK(self._widths)
         else:
-            blPara = self.breakLines([first_line_width, later_widths])
+            blPara = self.breakLines(self._widths)
         self.blPara = blPara
         autoLeading = getattr(self,'autoLeading',getattr(style,'autoLeading',''))
         leading = style.leading
@@ -1146,7 +1165,7 @@ class Paragraph(Flowable):
                         words.append(g)
                         g.text = nText
                     else:
-                        if nText!='' and nText[0]!=' ':
+                        if nText and nText[0]!=' ':
                             g.text += ' ' + nText
 
                     ni = 0
@@ -1361,9 +1380,10 @@ class Paragraph(Flowable):
                     cur_y = self.height - f.fontSize
                 else:
                     cur_y = self.height - getattr(f,'ascent',f.fontSize) 
-                if bulletText:
-                    offset = _drawBullet(canvas,offset,cur_y,bulletText,style)
 
+                ws = lines[0][0]
+                if bulletText:
+                    offset = _drawBullet(canvas,offset,cur_y,bulletText,style,rtl=style.wordWrap=='RTL' and getattr(self, '_widths', None))
                 #set up the font etc.
                 canvas.setFillColor(f.textColor)
 
@@ -1373,9 +1393,13 @@ class Paragraph(Flowable):
                 elif autoLeading=='min':
                     leading = blPara.ascent-blPara.descent
 
+                # set the paragraph direction
+                if self.style.wordWrap == 'RTL':
+                    tx.direction = 'RTL'
+
                 #now the font for the rest of the paragraph
                 tx.setFont(f.fontName, f.fontSize, leading)
-                ws = lines[0][0]
+
                 t_off = dpl( tx, offset, ws, lines[0][1], noJustifyLast and nLines==1)
                 if f.underline or f.link or f.strike:
                     xs = tx.XtraState = ABag()
@@ -1411,6 +1435,10 @@ class Paragraph(Flowable):
                     for i in xrange(1, nLines):
                         dpl( tx, _offsets[i], lines[i][0], lines[i][1], noJustifyLast and i==lim)
             else:
+                if self.style.wordWrap == 'RTL':
+                    for line in lines:
+                        line.words = line.words[::-1]
+
                 f = lines[0]
                 if rl_config.paraFontSizeHeightOffset:
                     cur_y = self.height - f.fontSize
@@ -1420,7 +1448,7 @@ class Paragraph(Flowable):
                 dpl = _leftDrawParaLineX
                 if bulletText:
                     oo = offset
-                    offset = _drawBullet(canvas,offset,cur_y,bulletText,style)
+                    offset = _drawBullet(canvas,offset,cur_y,bulletText,style, rtl=style.wordWrap=='RTL' and getattr(self, '_widths', None))
                 if alignment == TA_LEFT:
                     dpl = _leftDrawParaLineX
                 elif alignment == TA_CENTER:
@@ -1434,6 +1462,10 @@ class Paragraph(Flowable):
 
                 #set up the font etc.
                 tx = self.beginText(cur_x, cur_y)
+                # set the paragraph direction
+                if self.style.wordWrap == 'RTL':
+                    tx.direction = 'RTL'
+
                 xs = tx.XtraState=ABag()
                 xs.textColor=None
                 xs.rise=0
