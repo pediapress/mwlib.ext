@@ -6,6 +6,7 @@ __doc__='''The standard paragraph implementation'''
 from string import join, whitespace
 from operator import truth
 from types import StringType, ListType
+from unicodedata import category
 from reportlab.pdfbase.pdfmetrics import stringWidth, getFont, getAscentDescent
 from reportlab.platypus.paraparser import ParaParser
 from reportlab.platypus.flowables import Flowable
@@ -23,7 +24,7 @@ import re
 #on UTF8 branch, split and strip must be unicode-safe!
 #thanks to Dirk Holtwick for helpful discussions/insight
 #on this one
-_wsc_re_split=re.compile('[%s]+'% re.escape(''.join((
+_wsc = ''.join((
     u'\u0009',  # HORIZONTAL TABULATION
     u'\u000A',  # LINE FEED
     u'\u000B',  # VERTICAL TABULATION
@@ -54,7 +55,8 @@ _wsc_re_split=re.compile('[%s]+'% re.escape(''.join((
     u'\u202F',  # NARROW NO-BREAK SPACE
     u'\u205F',  # MEDIUM MATHEMATICAL SPACE
     u'\u3000',  # IDEOGRAPHIC SPACE
-    )))).split
+    ))
+_wsc_re_split=re.compile('[%s]+'% re.escape(_wsc)).split
 
 def split(text, delim=None):
     if type(text) is str: text = text.decode('utf8')
@@ -65,7 +67,7 @@ def split(text, delim=None):
 
 def strip(text):
     if type(text) is str: text = text.decode('utf8')
-    return text.strip().encode('utf8')
+    return text.strip(_wsc).encode('utf8')
 
 class ParaLines(ABag):
     """
@@ -299,6 +301,18 @@ def _putFragLine(cur_x, tx, line):
                     xs.link = f.link
                     xs.link_x = cur_x_s
                     xs.linkColor = xs.textColor
+            bg = getattr(f,'backColor',None)
+            if bg and not xs.backColor:
+                xs.backColor = bg
+                xs.backColor_x = cur_x_s
+            elif xs.backColor:
+                if not bg:
+                    xs.backColors.append( (xs.backColor_x, cur_x_s, xs.backColor) )
+                    xs.backColor = None
+                elif f.backColor!=xs.backColor or xs.textColor!=xs.backColor:
+                    xs.backColors.append( (xs.backColor_x, cur_x_s, xs.backColor) )
+                    xs.backColor = bg
+                    xs.backColor_x = cur_x_s
             txtlen = tx._canvas.stringWidth(text, tx._fontname, tx._fontsize)
             cur_x += txtlen
             nSpaces += text.count(' ')+_nbspCount(text)
@@ -309,6 +323,8 @@ def _putFragLine(cur_x, tx, line):
         xs.strikes.append( (xs.strike_x, cur_x_s, xs.strikeColor) )
     if xs.link:
         xs.links.append( (xs.link_x, cur_x_s, xs.link,xs.linkColor) )
+    if xs.backColor:
+        xs.backColors.append( (xs.backColor_x, cur_x_s, xs.backColor) )
     if tx._x0!=x0:
         setXPos(tx,x0-tx._x0)
 
@@ -355,7 +371,7 @@ except ImportError:
             'returns 1 if two ParaFrags map out the same'
             if (hasattr(f,'cbDefn') or hasattr(g,'cbDefn')
                     or hasattr(f,'lineBreak') or hasattr(g,'lineBreak')): return 0
-            for a in ('fontName', 'fontSize', 'textColor', 'rise', 'underline', 'strike', 'link'):
+            for a in ('fontName', 'fontSize', 'textColor', 'rise', 'underline', 'strike', 'link', "backColor"):
                 if getattr(f,a,None)!=getattr(g,a,None): return 0
             return 1
 
@@ -643,6 +659,13 @@ def _do_post_text(tx):
     xs.links = []
     xs.link=None
     xs.linkColor=None
+
+    for x1,x2,c in xs.backColors:
+        tx._canvas.setFillColor(c)
+        tx._canvas.rect(x1,y,x2-x1,yl-y,stroke=0,fill=1)
+
+    xs.backColors=[]
+    xs.backColor=None
     xs.cur_y -= leading
 
 def textTransformFrags(frags,style):
@@ -758,17 +781,44 @@ def cjkFragSplit(frags, maxWidths, calcBounds, encoding='utf8'):
         if endLine:
             extraSpace = maxWidth - widthUsed
             if not lineBreak:
-                #This is the most important of the Japanese typography rules.
-                #if next character cannot start a line, wrap it up to this line so it hangs
+                if ord(u)<0x3000:
+                    # we appear to be inside a non-Asian script section.
+                    # (this is a very crude test but quick to compute).
+                    # This is likely to be quite rare so the speed of the
+                    # code below is hopefully not a big issue.  The main
+                    # situation requiring this is that a document title
+                    # with an english product name in it got cut.
+                    
+                    
+                    # we count back and look for 
+                    #  - a space-like character
+                    #  - reversion to Kanji (which would be a good split point)
+                    #  - in the worst case, roughly half way back along the line
+                    limitCheck = (lineStartPos+i)>>1        #(arbitrary taste issue)
+                    for j in xrange(i-1,limitCheck,-1):
+                        uj = U[j]
+                        if uj and category(uj)=='Zs' or ord(uj)>=0x3000:
+                            k = j+1
+                            if k<i:
+                                j = k+1
+                                extraSpace += sum(U[ii].width for ii in xrange(j,i))
+                                w = U[k].width
+                                u = U[k]
+                                i = j
+                                break
+
+                #we are pushing this character back, but
+                #the most important of the Japanese typography rules
+                #if this character cannot start a line, wrap it up to this line so it hangs
                 #in the right margin. We won't do two or more though - that's unlikely and
                 #would result in growing ugliness.
-                #otherwise we need to push the character back
                 #and increase the extra space
                 #bug fix contributed by Alexander Vasilenko <alexs.vasilenko@gmail.com>
-                if u not in ALL_CANNOT_START:
+                if u not in ALL_CANNOT_START and i>lineStartPos+1:
+                    #otherwise we need to push the character back
+                    #the i>lineStart+1 condition ensures progress
                     i -= 1
                     extraSpace += w
-
             lines.append(makeCJKParaLine(U[lineStartPos:i],extraSpace,calcBounds))
             try:
                 maxWidth = maxWidths[len(lines)]
@@ -864,6 +914,8 @@ class Paragraph(Flowable):
                     % (_parser.errors[0],text[:min(30,len(text))]))
             textTransformFrags(frags,style)
             if bulletTextFrags: bulletText = bulletTextFrags
+            elif bulletText is None:
+                bulletText = getattr(style,'bulletText',None)
 
         #AR hack
         self.text = text
@@ -969,8 +1021,8 @@ class Paragraph(Flowable):
             height = s*l
 
         n = len(lines)
-        allowWidows = getattr(self,'allowWidows',getattr(self,'allowWidows',1))
-        allowOrphans = getattr(self,'allowOrphans',getattr(self,'allowOrphans',0))
+        allowWidows = getattr(self,'allowWidows',getattr(style,'allowWidows',1))
+        allowOrphans = getattr(self,'allowOrphans',getattr(style,'allowOrphans',0))
         if not allowOrphans:
             if s<=1:    #orphan?
                 del self.blPara
@@ -1061,7 +1113,18 @@ class Paragraph(Flowable):
             fontSize = f.fontSize
             fontName = f.fontName
             ascent, descent = getAscentDescent(fontName,fontSize)
-            words = hasattr(f,'text') and split(f.text, ' ') or f.words
+            if hasattr(f,'text'):
+                text = strip(f.text)
+                if not text:
+                    return f.clone(kind=0, lines=[],ascent=ascent,descent=descent,fontSize=fontSize)
+                else:
+                    words = split(text)
+            else:
+                words = f.words
+                for w in words:
+                    if strip(w): break
+                else:
+                    return f.clone(kind=0, lines=[],ascent=ascent,descent=descent,fontSize=fontSize)
             spaceWidth = stringWidth(' ', fontName, fontSize, self.encoding)
             cLine = []
             currentWidth = -spaceWidth   # hack to get around extra space for word 1
@@ -1255,12 +1318,11 @@ class Paragraph(Flowable):
 
         return lines
 
-    def breakLinesCJK(self, width):
+    def breakLinesCJK(self, maxWidths):
         """Initially, the dumbest possible wrapping algorithm.
         Cannot handle font variations."""
 
-        if not isinstance(width,(list,tuple)): maxWidths = [width]
-        else: maxWidths = width
+        if not isinstance(maxWidths,(list,tuple)): maxWidths = [maxWidths]
         style = self.style
         self.height = 0
 
@@ -1281,7 +1343,7 @@ class Paragraph(Flowable):
                 text = ''.join(getattr(f,'words',[]))
 
             from reportlab.lib.textsplit import wordSplit
-            lines = wordSplit(text, maxWidths[0], f.fontName, f.fontSize)
+            lines = wordSplit(text, maxWidths, f.fontName, f.fontSize)
             #the paragraph drawing routine assumes multiple frags per line, so we need an
             #extra list like this
             #  [space, [text]]
@@ -1468,6 +1530,7 @@ class Paragraph(Flowable):
 
                 xs = tx.XtraState=ABag()
                 xs.textColor=None
+                xs.backColor=None
                 xs.rise=0
                 xs.underline=0
                 xs.underlines=[]
@@ -1475,6 +1538,7 @@ class Paragraph(Flowable):
                 xs.strike=0
                 xs.strikes=[]
                 xs.strikeColor=None
+                xs.backColors=[]
                 xs.links=[]
                 xs.link=None
                 xs.leading = style.leading

@@ -200,6 +200,8 @@ class XPreformatted(Paragraph):
 
         return lines
 
+    breakLinesCJK = breakLines  #TODO fixme fixme fixme
+
     # we need this her to get the right splitter
     def _get_split_blParaFunc(self):
         return _split_blPara

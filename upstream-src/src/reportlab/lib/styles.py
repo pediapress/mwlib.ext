@@ -18,6 +18,7 @@ __all__=(
         'PropertySet',
         'ParagraphStyle',
         'LineStyle',
+        'ListStyle',
         'StyleSheet1',
         'getSampleStyleSheet',
         )
@@ -46,7 +47,7 @@ class PropertySet:
         assert 'name' not in self.defaults, "Class Defaults may not contain a 'name' attribute"
         assert 'parent' not in self.defaults, "Class Defaults may not contain a 'parent' attribute"
         if parent:
-            assert parent.__class__ == self.__class__, "Parent style must have same class as new style"
+            assert parent.__class__ == self.__class__, "Parent style %s must have same class as new style %s" % (parent.__class__.__name__,self.__class__.__name__)
 
         #step two
         self.name = name
@@ -57,7 +58,9 @@ class PropertySet:
         # very strict that only keys in class defaults are
         # allowed, so they cannot inherit
         self.refresh()
+        self._setKwds(**kw)
 
+    def _setKwds(self,**kw):
         #step three - copy keywords if any
         for (key, value) in kw.items():
              self.__dict__[key] = value
@@ -85,6 +88,13 @@ class PropertySet:
             value = self.__dict__.get(key, None)
             print indent + '%s = %s' % (key, value)
 
+    def clone(self, name, parent=None, **kwds):
+        r = self.__class__(name,parent)
+        r.__dict__ = self.__dict__.copy()
+        r.parent = parent is None and self or parent
+        r._setKwds(**kwds)
+        return r
+
 class ParagraphStyle(PropertySet):
     defaults = {
         'fontName':_baseFontName,
@@ -99,6 +109,7 @@ class ParagraphStyle(PropertySet):
         'bulletFontName':_baseFontName,
         'bulletFontSize':10,
         'bulletIndent':0,
+        #'bulletColor':black,
         'textColor': black,
         'backColor':None,
         'wordWrap':None,
@@ -121,6 +132,21 @@ class LineStyle(PropertySet):
         the lines."""
         canvas.setLineWidth(1)
         #etc. etc.
+
+class ListStyle(PropertySet):
+    defaults = dict(
+                leftIndent=18,
+                rightIndent=0,
+                bulletAlign='left',
+                bulletType='1',
+                bulletColor=black,
+                bulletFontName='Helvetica',
+                bulletFontSize=12,
+                bulletOffsetY=0,
+                bulletDedent='auto',
+                bulletDir='ltr',
+                bulletFormat=None,
+                )
 
 _stylesheet1_undefined = object()
 

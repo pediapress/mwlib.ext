@@ -57,6 +57,7 @@ class LayoutError(Exception):
     pass
 
 def _fSizeString(f):
+    #used to get size during error messages
     w=getattr(f,'width',None)
     if w is None:
         w=getattr(f,'_width',None)
@@ -64,10 +65,15 @@ def _fSizeString(f):
     h=getattr(f,'height',None)
     if h is None:
         h=getattr(f,'_height',None)
+    #tables in particular may have some nasty large culprit
+    if hasattr(f, '_culprit'):
+        c = ', %s, ' % f._culprit()
+    else:
+        c = ''
     if w is not None or h is not None:
         if w is None: w='???'
         if h is None: h='???'
-        return '(%s x %s)' % (w,h)
+        return '(%s x %s)%s' % (w,h,c)
     return ''
 
 def _doNothing(canvas, doc):
@@ -549,6 +555,8 @@ class BaseDocTemplate:
             hang a page begin
         '''
         self._removeVars(('page','frame'))
+        self._leftExtraIndent = self.frame._leftExtraIndent
+        self._rightExtraIndent = self.frame._rightExtraIndent
         #detect infinite loops...
         if self._curPageFlowableCount == 0:
             self._emptyPages += 1
@@ -773,9 +781,9 @@ class BaseDocTemplate:
                 else:
                     n = 0
                 if n:
-                    if not isinstance(S[0],(PageBreak,SlowPageBreak,ActionFlowable)):
+                    if not isinstance(S[0],(PageBreak,SlowPageBreak,ActionFlowable,DDIndenter)):
                         if not frame.add(S[0], canv, trySplit=0):
-                            ident = "Splitting error(n==%d) on page %d in\n%s" % (n,self.page,self._fIdent(f,60,frame))
+                            ident = "Splitting error(n==%d) on page %d in\n%s\nS[0]=%s" % (n,self.page,self._fIdent(f,60,frame),self._fIdent(S[0],60,frame))
                             #leave to keep apart from the raise
                             raise LayoutError(ident)
                         self._curPageFlowableCount += 1
