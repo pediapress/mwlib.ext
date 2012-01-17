@@ -473,7 +473,7 @@ def _split_blParaHard(blPara,start,stop):
                 elif g.text[-1]!=' ': g.text += ' '
     return f
 
-def _drawBullet(canvas, offset, cur_y, bulletText, style, rtl):
+def _drawBullet(canvas, offset, cur_y, bulletText, style, rtl=False):
     '''draw a bullet text could be a simple string or a frag list'''
     width = canvas._doctemplate.width
     if not rtl:
