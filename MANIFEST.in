@@ -433,10 +433,12 @@ include upstream-src/tests/test_pdfgen_pagemodes.py
 include upstream-src/tests/test_pdfgen_pycanvas.py
 include upstream-src/tests/test_platypus_accum.py
 include upstream-src/tests/test_platypus_breaking.py
+include upstream-src/tests/test_platypus_cjk_wrap.py
 include upstream-src/tests/test_platypus_general.py
 include upstream-src/tests/test_platypus_indents.py
 include upstream-src/tests/test_platypus_index.py
 include upstream-src/tests/test_platypus_leftright.py
+include upstream-src/tests/test_platypus_lists.py
 include upstream-src/tests/test_platypus_paragraphs.py
 include upstream-src/tests/test_platypus_paraparser.py
 include upstream-src/tests/test_platypus_pleaseturnover.py
