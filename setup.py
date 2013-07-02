@@ -1,12 +1,6 @@
 #! /usr/bin/env python
 
-try:
-    from setuptools import setup, Extension, find_packages
-except ImportError:
-    import ez_setup
-    ez_setup.use_setuptools()
-    from setuptools import setup, Extension, find_packages
-
+from setuptools import setup, Extension, find_packages
 from distutils import sysconfig
 if sysconfig.get_config_var("LIBM") == "-lm":
     libraries = ["m"]
